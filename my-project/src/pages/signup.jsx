@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-
+import Themetoggle from '../components/Themetoggle'
 export default function SignUp() {
   const [formData, setFormData] = useState({
     fullName: '',
@@ -28,6 +28,7 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 flex items-center justify-center p-4">
+      <Themetoggle />
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         {/* Logo/Brand */}
         <div className="text-center mb-8">

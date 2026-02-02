@@ -1,5 +1,5 @@
 import { useState } from 'react'
-
+import Themetoggle from '../components/Themetoggle'
 export default function SignIn() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -12,6 +12,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Themetoggle />
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         {/* Logo/Brand */}
         <div className="text-center mb-8">

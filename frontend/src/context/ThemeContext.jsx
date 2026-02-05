@@ -1,14 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { useTheme } from '../hooks/useTheme'
-const ThemeContext = createContext()
 
+const ThemeContext = createContext()
 export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme')
+    console.log('Initial theme from localStorage:', saved)
     return saved === 'dark'
   })
 
   useEffect(() => {
+    console.log('Theme changed to:', isDark ? 'dark' : 'light')
     if (isDark) {
       document.documentElement.classList.add('dark')
       localStorage.setItem('theme', 'dark')
@@ -18,7 +19,10 @@ export function ThemeProvider({ children }) {
     }
   }, [isDark])
 
-  const toggleTheme = () => setIsDark(!isDark)
+  const toggleTheme = () => {
+    console.log('Toggle theme clicked!')
+    setIsDark(!isDark)
+  }
 
   return (
     <ThemeContext.Provider value={{ isDark, toggleTheme }}>

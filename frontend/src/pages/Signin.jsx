@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Themetoggle from '../components/Themetoggle'
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -104,11 +105,11 @@ export default function SignIn() {
 
         {/* Sign Up Link */}
         <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
-          Don't have an account?{' '}
-          <a href="/signup" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-800 dark:hover:text-indigo-300">
-            Sign up
-          </a>
-        </p>
+    Don't have an account?{' '}
+    <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 font-semibold hover:text-indigo-800 dark:hover:text-indigo-300">
+      Sign up
+    </Link>
+  </p>
       </div>
     </div>
   )

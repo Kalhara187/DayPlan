@@ -10,11 +10,20 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="*" element={<Navigate to="/signin" replace />} />
-          <Route path="/navbar" element={<Navbar />} />
-          <Route path="/landing" element={<Landing />} />
+          
+          {/* Protected routes with Navbar */}
+          <Route path="/dashboard" element={<><Navbar /><div className="pt-16">Dashboard Content</div></>} />
+          <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
+          <Route path="/calendar" element={<><Navbar /><div className="pt-16">Calendar Content</div></>} />
+          <Route path="/reports" element={<><Navbar /><div className="pt-16">Reports Content</div></>} />
+          
+          {/* Catch all - redirect to landing */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>

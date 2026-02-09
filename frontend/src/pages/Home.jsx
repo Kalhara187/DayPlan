@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
+import api from '../services/api'
 
 export default function Home() {
     const [user] = useState(() => {
         const userData = localStorage.getItem('user')
         return userData ? JSON.parse(userData) : null
     })
+    const [notificationSettings, setNotificationSettings] = useState({
+        emailNotifications: false,
+        notificationTime: '09:00',
+        notificationEmail: ''
+    })
+    const [loading, setLoading] = useState(false)
+    const [message, setMessage] = useState({ text: '', type: '' })
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -18,7 +26,128 @@ export default function Home() {
             navigate('/signin')
             return
         }
+
+        // Fetch notification settings
+        fetchNotificationSettings()
     }, [navigate])
+
+    const fetchNotificationSettings = async () => {
+        try {
+            const response = await api.get('/api/notifications/settings')
+            if (response.data.status === 'success') {
+                setNotificationSettings(response.data.data)
+            }
+        } catch (error) {
+            console.error('Error fetching notification settings:', error)
+        }
+    }
+
+    const handleNotificationToggle = async () => {
+        setLoading(true)
+        setMessage({ text: '', type: '' })
+
+        try {
+            const newValue = !notificationSettings.emailNotifications
+            const response = await api.put('/api/notifications/settings', {
+                emailNotifications: newValue
+            })
+
+            if (response.data.status === 'success') {
+                setNotificationSettings(prev => ({
+                    ...prev,
+                    emailNotifications: newValue
+                }))
+                setMessage({
+                    text: newValue ? 'Email notifications enabled!' : 'Email notifications disabled',
+                    type: 'success'
+                })
+            }
+        } catch (error) {
+            console.error('Error updating notification settings:', error)
+            setMessage({
+                text: 'Failed to update notification settings',
+                type: 'error'
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleTimeChange = async (e) => {
+        const newTime = e.target.value
+        setNotificationSettings(prev => ({ ...prev, notificationTime: newTime }))
+
+        try {
+            await api.put('/api/notifications/settings', {
+                notificationTime: newTime
+            })
+            setMessage({
+                text: 'Notification time updated!',
+                type: 'success'
+            })
+        } catch (error) {
+            console.error('Error updating notification time:', error)
+            setMessage({
+                text: 'Failed to update notification time',
+                type: 'error'
+            })
+        }
+    }
+
+    const handleEmailChange = async (e) => {
+        const newEmail = e.target.value
+        setNotificationSettings(prev => ({ ...prev, notificationEmail: newEmail }))
+    }
+
+    const handleEmailBlur = async () => {
+        try {
+            await api.put('/api/notifications/settings', {
+                notificationEmail: notificationSettings.notificationEmail
+            })
+            setMessage({
+                text: 'Notification email updated!',
+                type: 'success'
+            })
+        } catch (error) {
+            console.error('Error updating notification email:', error)
+            setMessage({
+                text: 'Failed to update notification email',
+                type: 'error'
+            })
+        }
+    }
+
+    const handleSendTestEmail = async () => {
+        setLoading(true)
+        setMessage({ text: '', type: '' })
+
+        try {
+            const response = await api.post('/api/notifications/test')
+            if (response.data.status === 'success') {
+                setMessage({
+                    text: `Test email sent to ${response.data.data.sentTo}!`,
+                    type: 'success'
+                })
+            }
+        } catch (error) {
+            console.error('Error sending test email:', error)
+            setMessage({
+                text: 'Failed to send test email. Check your email configuration.',
+                type: 'error'
+            })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (message.text) {
+            const timer = setTimeout(() => {
+                setMessage({ text: '', type: '' })
+            }, 5000)
+            return () => clearTimeout(timer)
+        }
+    }, [message])
 
     const getCurrentDate = () => {
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
@@ -104,6 +233,106 @@ export default function Home() {
                             </div>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white">100%</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Keep it up!</p>
+                        </div>
+                    </div>
+
+                    {/* Email Notification Settings */}
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                                    📧 Daily Task Notifications
+                                </h2>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    Get daily reminders via email to stay on top of your tasks
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Success/Error Message */}
+                        {message.text && (
+                            <div className={`mb-4 p-4 rounded-lg ${message.type === 'success'
+                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                }`}>
+                                {message.text}
+                            </div>
+                        )}
+
+                        <div className="space-y-6">
+                            {/* Enable/Disable Toggle */}
+                            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                        Enable Email Notifications
+                                    </h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Receive daily task reminders in your inbox
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleNotificationToggle}
+                                    disabled={loading}
+                                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${notificationSettings.emailNotifications
+                                            ? 'bg-blue-600'
+                                            : 'bg-gray-300 dark:bg-gray-600'
+                                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <span
+                                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${notificationSettings.emailNotifications ? 'translate-x-7' : 'translate-x-1'
+                                            }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Notification Time */}
+                            {notificationSettings.emailNotifications && (
+                                <>
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
+                                            Notification Time
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={notificationSettings.notificationTime}
+                                            onChange={handleTimeChange}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                        />
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                            Choose when you'd like to receive your daily reminder
+                                        </p>
+                                    </div>
+
+                                    {/* Notification Email */}
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
+                                            Notification Email (Optional)
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={notificationSettings.notificationEmail}
+                                            onChange={handleEmailChange}
+                                            onBlur={handleEmailBlur}
+                                            placeholder={user?.email || "your.email@example.com"}
+                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400"
+                                        />
+                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                            Leave empty to use your account email ({user?.email})
+                                        </p>
+                                    </div>
+
+                                    {/* Send Test Email */}
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={handleSendTestEmail}
+                                            disabled={loading}
+                                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                        >
+                                            {loading ? 'Sending...' : 'Send Test Email'}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

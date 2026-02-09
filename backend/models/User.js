@@ -33,6 +33,23 @@ const userSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
+    },
+    emailNotifications: {
+        type: Boolean,
+        default: false
+    },
+    notificationTime: {
+        type: String,
+        default: '09:00' // Default to 9:00 AM
+    },
+    notificationEmail: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            'Please provide a valid email'
+        ]
     }
 }, {
     timestamps: true

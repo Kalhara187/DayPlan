@@ -252,8 +252,8 @@ export default function Home() {
                         {/* Success/Error Message */}
                         {message.text && (
                             <div className={`mb-4 p-4 rounded-lg ${message.type === 'success'
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                 }`}>
                                 {message.text}
                             </div>
@@ -274,8 +274,8 @@ export default function Home() {
                                     onClick={handleNotificationToggle}
                                     disabled={loading}
                                     className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${notificationSettings.emailNotifications
-                                            ? 'bg-blue-600'
-                                            : 'bg-gray-300 dark:bg-gray-600'
+                                        ? 'bg-blue-600'
+                                        : 'bg-gray-300 dark:bg-gray-600'
                                         } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <span
@@ -383,6 +383,7 @@ export default function Home() {
                                 </button>
 
                                 <button
+                                    onClick={() => navigate('/settings')}
                                     className="flex flex-col items-center justify-center p-6 bg-orange-50 dark:bg-orange-900/20 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors"
                                 >
                                     <svg className="w-8 h-8 text-orange-600 dark:text-orange-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

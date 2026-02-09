@@ -43,8 +43,8 @@ export default function SignUp() {
       const { fullName, email, password } = formData
       const response = await authAPI.signup({ fullName, email, password })
       console.log('Registration successful:', response)
-      // Redirect to dashboard or home page
-      navigate('/')
+      // Redirect to home page
+      navigate('/home')
     } catch (err) {
       console.error('Signup error:', err)
       setError(err.message || 'Failed to create account. Please try again.')

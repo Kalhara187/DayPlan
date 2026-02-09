@@ -18,8 +18,8 @@ export default function SignIn() {
     try {
       const response = await authAPI.signin({ email, password })
       console.log('Login successful:', response)
-      // Redirect to dashboard or home page
-      navigate('/')
+      // Redirect to home page
+      navigate('/home')
     } catch (err) {
       console.error('Login error:', err)
       setError(err.message || 'Failed to sign in. Please check your credentials.')

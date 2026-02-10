@@ -13,12 +13,12 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
+          <Route path="/" element={<Landing />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/signin" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
 
           {/* Protected routes */}
-          <Route path="/" element={<Home />} />
           <Route path="/home" element={<Home />} />
           <Route path="/dashboard" element={<Home />} />
           <Route path="/settings" element={<Settings />} />

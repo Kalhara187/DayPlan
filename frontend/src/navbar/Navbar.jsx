@@ -12,6 +12,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Plan Day', path: '/dayplan' },
     { name: 'My Tasks', path: '/tasks' },
     { name: 'Calendar', path: '/calendar' },
     { name: 'Reports', path: '/reports' },
@@ -49,8 +50,8 @@ export default function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive(link.path)
-                    ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
               >
                 {link.name}
@@ -159,8 +160,8 @@ export default function Navbar() {
                 to={link.path}
                 onClick={() => setIsMenuOpen(false)}
                 className={`block px-4 py-3 rounded-lg text-base font-medium transition-colors duration-200 ${isActive(link.path)
-                    ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
               >
                 {link.name}

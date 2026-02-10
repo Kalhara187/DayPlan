@@ -5,6 +5,7 @@ import SignIn from './pages/Signin.jsx'
 import SignUp from './pages/Signup.jsx'
 import Home from './pages/Home.jsx'
 import Settings from './pages/Settings.jsx'
+import DayPlan from './pages/DayPlan.jsx'
 import Navbar from './navbar/Navbar.jsx'
 
 export default function App() {
@@ -21,6 +22,8 @@ export default function App() {
           {/* Protected routes */}
           <Route path="/home" element={<Home />} />
           <Route path="/dashboard" element={<Home />} />
+          <Route path="/dayplan" element={<DayPlan />} />
+          <Route path="/plan" element={<DayPlan />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
           <Route path="/calendar" element={<><Navbar /><div className="pt-16">Calendar Content</div></>} />

@@ -23,7 +23,7 @@ export default function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/dashboard" element={<Home />} />
           <Route path="/dayplan" element={<DayPlan />} />
-          <Route path="/plan" element={<DayPlan />} />
+        
           <Route path="/settings" element={<Settings />} />
           <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
           <Route path="/calendar" element={<><Navbar /><div className="pt-16">Calendar Content</div></>} />

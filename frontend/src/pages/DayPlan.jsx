@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
+import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
-    const [tasks, setTasks] = useState([])
+    const { tasks, addTask, deleteTask, toggleTaskComplete } = useTasks()
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
@@ -25,7 +26,7 @@ export default function DayPlan() {
     const handleAddTask = (e) => {
         e.preventDefault()
         if (newTask.title.trim()) {
-            setTasks([...tasks, { ...newTask, id: Date.now(), completed: false }])
+            addTask({ ...newTask, date: selectedDate })
             setNewTask({
                 title: '',
                 description: '',
@@ -38,13 +39,11 @@ export default function DayPlan() {
     }
 
     const handleDeleteTask = (id) => {
-        setTasks(tasks.filter(task => task.id !== id))
+        deleteTask(id)
     }
 
     const handleToggleComplete = (id) => {
-        setTasks(tasks.map(task =>
-            task.id === id ? { ...task, completed: !task.completed } : task
-        ))
+        toggleTaskComplete(id)
     }
 
     const getPriorityColor = (priority) => {
@@ -95,11 +94,13 @@ export default function DayPlan() {
         }
     }
 
+    const dateTasks = tasks.filter(t => t.date === selectedDate)
+
     const stats = {
-        total: tasks.length,
-        completed: tasks.filter(t => t.completed).length,
-        pending: tasks.filter(t => !t.completed).length,
-        highPriority: tasks.filter(t => t.priority === 'high').length
+        total: dateTasks.length,
+        completed: dateTasks.filter(t => t.completed).length,
+        pending: dateTasks.filter(t => !t.completed).length,
+        highPriority: dateTasks.filter(t => t.priority === 'high').length
     }
 
     return (
@@ -276,17 +277,20 @@ export default function DayPlan() {
                         {/* Tasks List */}
                         <div className="lg:col-span-2">
                             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Today's Schedule</h2>
-                                    <input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={(e) => setSelectedDate(e.target.value)}
-                                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                                    />
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Schedule</h2>
+                                    <div className="flex items-center space-x-2">
+                                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date:</label>
+                                        <input
+                                            type="date"
+                                            value={selectedDate}
+                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                        />
+                                    </div>
                                 </div>
 
-                                {tasks.length === 0 ? (
+                                {dateTasks.length === 0 ? (
                                     <div className="text-center py-12">
                                         <svg className="w-24 h-24 mx-auto text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -296,7 +300,7 @@ export default function DayPlan() {
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
-                                        {tasks.map((task) => (
+                                        {dateTasks.map((task) => (
                                             <div
                                                 key={task.id}
                                                 className={`border-l-4 ${task.completed ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-blue-500 bg-white dark:bg-gray-700'} rounded-lg p-4 shadow hover:shadow-md transition-all`}

@@ -1,38 +1,42 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { TaskProvider } from './context/TaskContext.jsx'
 import Landing from './pages/Landing.jsx'
 import SignIn from './pages/Signin.jsx'
 import SignUp from './pages/Signup.jsx'
 import Home from './pages/Home.jsx'
 import Settings from './pages/Settings.jsx'
 import DayPlan from './pages/DayPlan.jsx'
+import Calendar from './pages/Calendar.jsx'
 import Navbar from './navbar/Navbar.jsx'
 
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Landing />} />
-          <Route path="/landing" element={<Landing />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
+      <TaskProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Landing />} />
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/signup" element={<SignUp />} />
 
-          {/* Protected routes */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/dashboard" element={<Home />} />
-          <Route path="/dayplan" element={<DayPlan />} />
-        
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
-          <Route path="/calendar" element={<><Navbar /><div className="pt-16">Calendar Content</div></>} />
-          <Route path="/reports" element={<><Navbar /><div className="pt-16">Reports Content</div></>} />
+            {/* Protected routes */}
+            <Route path="/home" element={<Home />} />
+            <Route path="/dashboard" element={<Home />} />
+            <Route path="/dayplan" element={<DayPlan />} />
 
-          {/* Catch all - redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/reports" element={<><Navbar /><div className="pt-16">Reports Content</div></>} />
+
+            {/* Catch all - redirect to home */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </TaskProvider>
     </ThemeProvider>
   )
 }

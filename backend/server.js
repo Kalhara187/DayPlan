@@ -1,20 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
+import connectDB from './config/db-fallback.js';
 import authRoutes from './routes/authRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import userRoutes from './routes/userRoutes.js';
-import './services/taskScheduler.js'; // Initialize task scheduler
 
 // Load environment variables
 dotenv.config();
 
 // Initialize express app
 const app = express();
-
-// Connect to MongoDB
-connectDB();
 
 // Middleware
 app.use(cors({
@@ -34,7 +30,9 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'success',
         message: 'Server is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        database: process.env.MONGODB_URI ? 'configured' : 'not configured',
+        email: process.env.EMAIL_USER ? 'configured' : 'not configured'
     });
 });
 
@@ -57,7 +55,29 @@ app.use('*', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+
+app.listen(PORT, async () => {
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`🚀 DayPlan Server Starting...`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`✓ Server running on port ${PORT}`);
+    console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✓ CORS enabled for: http://localhost:5173`);
+    
+    // Check email configuration
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+        console.log(`✓ Email service configured (${process.env.EMAIL_USER})`);
+        // Only initialize scheduler if email is configured
+        await import('./services/taskScheduler.js');
+    } else {
+        console.log(`⚠️  Email service not configured (EMAIL_USER/EMAIL_PASSWORD missing)`);
+    }
+    
+    // Connect to MongoDB (non-blocking)
+    console.log(`\n📊 Connecting to MongoDB...`);
+    await connectDB();
+    
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`✅ Server ready at http://localhost:${PORT}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 });

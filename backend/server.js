@@ -63,7 +63,7 @@ app.listen(PORT, async () => {
     console.log(`✓ Server running on port ${PORT}`);
     console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`✓ CORS enabled for: http://localhost:5173`);
-    
+
     // Check email configuration
     if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
         console.log(`✓ Email service configured (${process.env.EMAIL_USER})`);
@@ -72,11 +72,11 @@ app.listen(PORT, async () => {
     } else {
         console.log(`⚠️  Email service not configured (EMAIL_USER/EMAIL_PASSWORD missing)`);
     }
-    
+
     // Connect to MongoDB (non-blocking)
     console.log(`\n📊 Connecting to MongoDB...`);
     await connectDB();
-    
+
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`✅ Server ready at http://localhost:${PORT}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');

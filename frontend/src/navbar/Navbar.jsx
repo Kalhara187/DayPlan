@@ -31,8 +31,16 @@ export default function Navbar() {
     <nav className="bg-white dark:bg-gray-900 shadow-md border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          {/* Logo and Profile Icon */}
+          <div className="flex items-center space-x-4">
+            {/* Profile Icon */}
+            <Link to="/settings" className="flex items-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center hover:shadow-lg transition-shadow duration-200">
+                <span className="text-white text-sm font-semibold">{initials}</span>
+              </div>
+            </Link>
+
+            {/* Logo */}
             <Link to="/dashboard" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

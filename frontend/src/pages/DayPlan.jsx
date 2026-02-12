@@ -4,7 +4,7 @@ import Navbar from '../navbar/Navbar'
 import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
-    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete, cancelRecurringTask, deleteRecurringSeries, getAllTasksWithRecurring, availableTags, addTag, removeTagFromTask, getTagColor } = useTasks()
+    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete, cancelRecurringTask, deleteRecurringSeries, getAllTasksWithRecurring, availableTags, addTag, removeTagFromTask, getTagColor, addAttachmentToTask, removeAttachmentFromTask } = useTasks()
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
@@ -15,7 +15,8 @@ export default function DayPlan() {
         isRecurring: false,
         recurrenceType: null,
         recurrenceEndDate: '',
-        tags: []
+        tags: [],
+        attachments: []
     })
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
     const [expandedTasks, setExpandedTasks] = useState({})
@@ -23,6 +24,7 @@ export default function DayPlan() {
     const [editingSubtask, setEditingSubtask] = useState({ taskId: null, subtaskId: null })
     const [selectedTags, setSelectedTags] = useState([])
     const [newTagInput, setNewTagInput] = useState('')
+    const [previewAttachment, setPreviewAttachment] = useState(null)
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -46,7 +48,8 @@ export default function DayPlan() {
                 isRecurring: false,
                 recurrenceType: null,
                 recurrenceEndDate: '',
-                tags: []
+                tags: [],
+                attachments: []
             })
         }
     }
@@ -178,6 +181,86 @@ export default function DayPlan() {
 
     const clearTagFilters = () => {
         setSelectedTags([])
+    }
+
+    const handleFileUpload = async (e, taskId = null) => {
+        const files = Array.from(e.target.files)
+
+        for (const file of files) {
+            // File size limit: 2MB
+            if (file.size > 2 * 1024 * 1024) {
+                alert(`File "${file.name}" is too large. Maximum size is 2MB.`)
+                continue
+            }
+
+            const reader = new FileReader()
+            reader.onload = (event) => {
+                const attachment = {
+                    id: Date.now() + Math.random(),
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: event.target.result,
+                    uploadedAt: new Date().toISOString()
+                }
+
+                if (taskId) {
+                    // Add to existing task
+                    addAttachmentToTask(taskId, attachment)
+                } else {
+                    // Add to new task
+                    setNewTask(prev => ({
+                        ...prev,
+                        attachments: [...prev.attachments, attachment]
+                    }))
+                }
+            }
+            reader.readAsDataURL(file)
+        }
+        e.target.value = ''
+    }
+
+    const handleRemoveAttachment = (attachmentId, taskId = null) => {
+        if (taskId) {
+            removeAttachmentFromTask(taskId, attachmentId)
+        } else {
+            setNewTask(prev => ({
+                ...prev,
+                attachments: prev.attachments.filter(a => a.id !== attachmentId)
+            }))
+        }
+    }
+
+    const handlePreviewAttachment = (attachment) => {
+        setPreviewAttachment(attachment)
+    }
+
+    const closePreview = () => {
+        setPreviewAttachment(null)
+    }
+
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return '0 Bytes'
+        const k = 1024
+        const sizes = ['Bytes', 'KB', 'MB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+    }
+
+    const getFileIcon = (type) => {
+        if (type.startsWith('image/')) {
+            return '🖼️'
+        } else if (type.startsWith('video/')) {
+            return '🎥'
+        } else if (type.includes('pdf')) {
+            return '📄'
+        } else if (type.includes('word') || type.includes('document')) {
+            return '📝'
+        } else if (type.includes('sheet') || type.includes('excel')) {
+            return '📊'
+        } else {
+            return '📎'
+        }
     }
 
     const dateTasks = tasks.filter(t => t.date === selectedDate && !t.recurringParentId)
@@ -474,6 +557,84 @@ export default function DayPlan() {
                                         )}
                                     </div>
 
+                                    {/* Attachments Section */}
+                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Attachments 📎
+                                        </label>
+
+                                        {/* Display Attached Files */}
+                                        {newTask.attachments.length > 0 && (
+                                            <div className="space-y-2 mb-3">
+                                                {newTask.attachments.map(attachment => (
+                                                    <div
+                                                        key={attachment.id}
+                                                        className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                                                    >
+                                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                                            <span className="text-lg">{getFileIcon(attachment.type)}</span>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                                    {attachment.name}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                    {formatFileSize(attachment.size)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center space-x-1">
+                                                            {attachment.type.startsWith('image/') && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handlePreviewAttachment(attachment)}
+                                                                    className="p-1 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                    title="Preview"
+                                                                >
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveAttachment(attachment.id)}
+                                                                className="p-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                                title="Remove"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* File Upload Input */}
+                                        <div className="flex items-center justify-center w-full">
+                                            <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:border-gray-600 transition-colors">
+                                                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                    <svg className="w-8 h-8 mb-2 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                    </svg>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="font-semibold">Click to upload</span> or drag and drop
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">Max 2MB per file</p>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    onChange={(e) => handleFileUpload(e)}
+                                                    className="hidden"
+                                                    accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <button
                                         type="submit"
                                         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all transform hover:scale-105"
@@ -520,8 +681,8 @@ export default function DayPlan() {
                                                     key={tag}
                                                     onClick={() => toggleTagFilter(tag)}
                                                     className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedTags.includes(tag)
-                                                            ? `${getTagColor(tag)} ring-2 ring-blue-500 shadow-md`
-                                                            : `${getTagColor(tag)} opacity-50 hover:opacity-100`
+                                                        ? `${getTagColor(tag)} ring-2 ring-blue-500 shadow-md`
+                                                        : `${getTagColor(tag)} opacity-50 hover:opacity-100`
                                                         }`}
                                                 >
                                                     {selectedTags.includes(tag) ? '✓ ' : ''}{tag}
@@ -639,6 +800,68 @@ export default function DayPlan() {
                                                                             )}
                                                                         </span>
                                                                     ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Task Attachments */}
+                                                            {task.attachments && task.attachments.length > 0 && (
+                                                                <div className="mt-3">
+                                                                    <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                                                                        Attachments ({task.attachments.length}):
+                                                                    </p>
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {task.attachments.map(attachment => (
+                                                                            <div
+                                                                                key={attachment.id}
+                                                                                className="flex items-center space-x-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg text-xs border border-gray-300 dark:border-gray-600"
+                                                                            >
+                                                                                <span>{getFileIcon(attachment.type)}</span>
+                                                                                <span className="text-gray-700 dark:text-gray-300 max-w-[100px] truncate">
+                                                                                    {attachment.name}
+                                                                                </span>
+                                                                                <div className="flex items-center space-x-1">
+                                                                                    {attachment.type.startsWith('image/') && (
+                                                                                        <button
+                                                                                            onClick={() => handlePreviewAttachment(attachment)}
+                                                                                            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                                                                                            title="Preview"
+                                                                                        >
+                                                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                                            </svg>
+                                                                                        </button>
+                                                                                    )}
+                                                                                    {!task.isRecurringInstance && (
+                                                                                        <button
+                                                                                            onClick={() => handleRemoveAttachment(attachment.id, task.id)}
+                                                                                            className="text-red-600 hover:text-red-700 dark:text-red-400"
+                                                                                            title="Remove"
+                                                                                        >
+                                                                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                                            </svg>
+                                                                                        </button>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                    {!task.isRecurringInstance && (
+                                                                        <label className="mt-2 inline-flex items-center px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-xs cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
+                                                                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                            </svg>
+                                                                            Add file
+                                                                            <input
+                                                                                type="file"
+                                                                                multiple
+                                                                                onChange={(e) => handleFileUpload(e, task.id)}
+                                                                                className="hidden"
+                                                                                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                                                            />
+                                                                        </label>
+                                                                    )}
                                                                 </div>
                                                             )}
 
@@ -810,6 +1033,67 @@ export default function DayPlan() {
                     </div>
                 </div>
             </div>
+
+            {/* Attachment Preview Modal */}
+            {previewAttachment && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+                    onClick={closePreview}
+                >
+                    <div
+                        className="relative max-w-4xl max-h-[90vh] bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center space-x-2">
+                                <span className="text-2xl">{getFileIcon(previewAttachment.type)}</span>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {previewAttachment.name}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {formatFileSize(previewAttachment.size)}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={closePreview}
+                                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-4 max-h-[calc(90vh-100px)] overflow-auto">
+                            {previewAttachment.type.startsWith('image/') ? (
+                                <img
+                                    src={previewAttachment.data}
+                                    alt={previewAttachment.name}
+                                    className="max-w-full h-auto mx-auto"
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12">
+                                    <span className="text-6xl mb-4">{getFileIcon(previewAttachment.type)}</span>
+                                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                                        Preview not available for this file type
+                                    </p>
+                                    <a
+                                        href={previewAttachment.data}
+                                        download={previewAttachment.name}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    >
+                                        Download File
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     )
 }

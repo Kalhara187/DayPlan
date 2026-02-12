@@ -43,6 +43,7 @@ export function TaskProvider({ children }) {
             completed: false,
             subtasks: [],
             tags: task.tags || [],
+            attachments: task.attachments || [],
             isRecurring: task.isRecurring || false,
             recurrenceType: task.recurrenceType || null,
             recurrenceEndDate: task.recurrenceEndDate || null,
@@ -231,6 +232,26 @@ export function TaskProvider({ children }) {
         return TAG_COLORS[tagName] || TAG_COLORS.default
     }
 
+    // Attachment management functions
+    const addAttachmentToTask = (taskId, attachment) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                const attachments = task.attachments || []
+                return { ...task, attachments: [...attachments, attachment] }
+            }
+            return task
+        }))
+    }
+
+    const removeAttachmentFromTask = (taskId, attachmentId) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                return { ...task, attachments: (task.attachments || []).filter(a => a.id !== attachmentId) }
+            }
+            return task
+        }))
+    }
+
     return (
         <TaskContext.Provider value={{
             tasks,
@@ -253,7 +274,9 @@ export function TaskProvider({ children }) {
             removeTag,
             addTagToTask,
             removeTagFromTask,
-            getTagColor
+            getTagColor,
+            addAttachmentToTask,
+            removeAttachmentFromTask
         }}>
             {children}
         </TaskContext.Provider>

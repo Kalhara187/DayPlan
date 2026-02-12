@@ -4,7 +4,7 @@ import Navbar from '../navbar/Navbar'
 import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
-    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete, cancelRecurringTask, deleteRecurringSeries, getAllTasksWithRecurring } = useTasks()
+    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete, cancelRecurringTask, deleteRecurringSeries, getAllTasksWithRecurring, availableTags, addTag, removeTagFromTask, getTagColor } = useTasks()
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
@@ -14,12 +14,15 @@ export default function DayPlan() {
         category: 'work',
         isRecurring: false,
         recurrenceType: null,
-        recurrenceEndDate: ''
+        recurrenceEndDate: '',
+        tags: []
     })
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
     const [expandedTasks, setExpandedTasks] = useState({})
     const [newSubtask, setNewSubtask] = useState({})
     const [editingSubtask, setEditingSubtask] = useState({ taskId: null, subtaskId: null })
+    const [selectedTags, setSelectedTags] = useState([])
+    const [newTagInput, setNewTagInput] = useState('')
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -42,7 +45,8 @@ export default function DayPlan() {
                 category: 'work',
                 isRecurring: false,
                 recurrenceType: null,
-                recurrenceEndDate: ''
+                recurrenceEndDate: '',
+                tags: []
             })
         }
     }
@@ -147,10 +151,43 @@ export default function DayPlan() {
         }
     }
 
+    const handleAddTagToTask = (tagName) => {
+        if (!newTask.tags.includes(tagName)) {
+            setNewTask({ ...newTask, tags: [...newTask.tags, tagName] })
+        }
+    }
+
+    const handleRemoveTagFromNewTask = (tagName) => {
+        setNewTask({ ...newTask, tags: newTask.tags.filter(t => t !== tagName) })
+    }
+
+    const handleAddNewTag = () => {
+        if (newTagInput.trim() && addTag(newTagInput.trim())) {
+            handleAddTagToTask(newTagInput.toLowerCase().trim())
+            setNewTagInput('')
+        }
+    }
+
+    const toggleTagFilter = (tagName) => {
+        if (selectedTags.includes(tagName)) {
+            setSelectedTags(selectedTags.filter(t => t !== tagName))
+        } else {
+            setSelectedTags([...selectedTags, tagName])
+        }
+    }
+
+    const clearTagFilters = () => {
+        setSelectedTags([])
+    }
+
     const dateTasks = tasks.filter(t => t.date === selectedDate && !t.recurringParentId)
         .concat(
             getAllTasksWithRecurring(selectedDate, selectedDate).filter(t => t.date === selectedDate && t.isRecurringInstance)
         )
+        .filter(task => {
+            if (selectedTags.length === 0) return true
+            return selectedTags.some(tag => (task.tags || []).includes(tag))
+        })
 
     const stats = {
         total: dateTasks.length,
@@ -320,6 +357,67 @@ export default function DayPlan() {
                                         </select>
                                     </div>
 
+                                    {/* Tags Section */}
+                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Tags 🏷️
+                                        </label>
+
+                                        {/* Selected Tags */}
+                                        {newTask.tags.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mb-3">
+                                                {newTask.tags.map(tag => (
+                                                    <span
+                                                        key={tag}
+                                                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getTagColor(tag)}`}
+                                                    >
+                                                        {tag}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveTagFromNewTask(tag)}
+                                                            className="ml-1 hover:text-red-600"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Available Tags */}
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {availableTags.filter(tag => !newTask.tags.includes(tag)).map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    type="button"
+                                                    onClick={() => handleAddTagToTask(tag)}
+                                                    className={`px-2 py-1 rounded-full text-xs font-medium border hover:shadow-md transition-all ${getTagColor(tag)}`}
+                                                >
+                                                    + {tag}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {/* Add Custom Tag */}
+                                        <div className="flex items-center space-x-2">
+                                            <input
+                                                type="text"
+                                                value={newTagInput}
+                                                onChange={(e) => setNewTagInput(e.target.value)}
+                                                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddNewTag())}
+                                                placeholder="Create new tag..."
+                                                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddNewTag}
+                                                className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     {/* Recurring Task Options */}
                                     <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                                         <div className="flex items-center space-x-2 mb-3">
@@ -401,6 +499,42 @@ export default function DayPlan() {
                                         />
                                     </div>
                                 </div>
+
+                                {/* Tag Filter */}
+                                {availableTags.length > 0 && (
+                                    <div className="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Filter by Tags:</h3>
+                                            {selectedTags.length > 0 && (
+                                                <button
+                                                    onClick={clearTagFilters}
+                                                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                                                >
+                                                    Clear filters
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {availableTags.map(tag => (
+                                                <button
+                                                    key={tag}
+                                                    onClick={() => toggleTagFilter(tag)}
+                                                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedTags.includes(tag)
+                                                            ? `${getTagColor(tag)} ring-2 ring-blue-500 shadow-md`
+                                                            : `${getTagColor(tag)} opacity-50 hover:opacity-100`
+                                                        }`}
+                                                >
+                                                    {selectedTags.includes(tag) ? '✓ ' : ''}{tag}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        {selectedTags.length > 0 && (
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                Showing tasks with {selectedTags.length} tag{selectedTags.length > 1 ? 's' : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {dateTasks.length === 0 ? (
                                     <div className="text-center py-12">
@@ -484,6 +618,29 @@ export default function DayPlan() {
                                                                     </span>
                                                                 )}
                                                             </div>
+
+                                                            {/* Task Tags */}
+                                                            {task.tags && task.tags.length > 0 && (
+                                                                <div className="flex flex-wrap gap-2 mt-3">
+                                                                    {task.tags.map(tag => (
+                                                                        <span
+                                                                            key={tag}
+                                                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getTagColor(tag)}`}
+                                                                        >
+                                                                            🏷️ {tag}
+                                                                            {!task.isRecurringInstance && (
+                                                                                <button
+                                                                                    onClick={() => removeTagFromTask(task.id, tag)}
+                                                                                    className="ml-1 hover:text-red-600 dark:hover:text-red-400"
+                                                                                    title="Remove tag"
+                                                                                >
+                                                                                    ×
+                                                                                </button>
+                                                                            )}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
 
                                                             {/* Subtasks Section */}
                                                             {expandedTasks[task.id] && (

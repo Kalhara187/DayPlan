@@ -2,15 +2,39 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const TaskContext = createContext()
 
+// Predefined tag colors
+const TAG_COLORS = {
+    urgent: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 border-red-500',
+    important: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 border-orange-500',
+    work: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-500',
+    personal: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-500',
+    study: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 border-purple-500',
+    meeting: 'bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-300 border-pink-500',
+    fitness: 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 border-teal-500',
+    shopping: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border-yellow-500',
+    family: 'bg-rose-100 dark:bg-rose-900 text-rose-700 dark:text-rose-300 border-rose-500',
+    hobby: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 border-indigo-500',
+    default: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-500'
+}
+
 export function TaskProvider({ children }) {
     const [tasks, setTasks] = useState(() => {
         const saved = localStorage.getItem('dayplan_tasks')
         return saved ? JSON.parse(saved) : []
     })
 
+    const [availableTags, setAvailableTags] = useState(() => {
+        const saved = localStorage.getItem('dayplan_tags')
+        return saved ? JSON.parse(saved) : ['urgent', 'important', 'work', 'personal', 'study', 'meeting']
+    })
+
     useEffect(() => {
         localStorage.setItem('dayplan_tasks', JSON.stringify(tasks))
     }, [tasks])
+
+    useEffect(() => {
+        localStorage.setItem('dayplan_tags', JSON.stringify(availableTags))
+    }, [availableTags])
 
     const addTask = (task) => {
         const newTask = {
@@ -18,6 +42,7 @@ export function TaskProvider({ children }) {
             id: Date.now(),
             completed: false,
             subtasks: [],
+            tags: task.tags || [],
             isRecurring: task.isRecurring || false,
             recurrenceType: task.recurrenceType || null,
             recurrenceEndDate: task.recurrenceEndDate || null,
@@ -167,6 +192,45 @@ export function TaskProvider({ children }) {
         return [...regularTasks, ...recurringInstances]
     }
 
+    // Tag management functions
+    const addTag = (tagName) => {
+        const normalizedTag = tagName.toLowerCase().trim()
+        if (normalizedTag && !availableTags.includes(normalizedTag)) {
+            setAvailableTags([...availableTags, normalizedTag])
+            return true
+        }
+        return false
+    }
+
+    const removeTag = (tagName) => {
+        setAvailableTags(availableTags.filter(tag => tag !== tagName))
+    }
+
+    const addTagToTask = (taskId, tagName) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                const tags = task.tags || []
+                if (!tags.includes(tagName)) {
+                    return { ...task, tags: [...tags, tagName] }
+                }
+            }
+            return task
+        }))
+    }
+
+    const removeTagFromTask = (taskId, tagName) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                return { ...task, tags: (task.tags || []).filter(t => t !== tagName) }
+            }
+            return task
+        }))
+    }
+
+    const getTagColor = (tagName) => {
+        return TAG_COLORS[tagName] || TAG_COLORS.default
+    }
+
     return (
         <TaskContext.Provider value={{
             tasks,
@@ -183,7 +247,13 @@ export function TaskProvider({ children }) {
             generateRecurringInstances,
             cancelRecurringTask,
             deleteRecurringSeries,
-            getAllTasksWithRecurring
+            getAllTasksWithRecurring,
+            availableTags,
+            addTag,
+            removeTag,
+            addTagToTask,
+            removeTagFromTask,
+            getTagColor
         }}>
             {children}
         </TaskContext.Provider>

@@ -6,7 +6,7 @@ import { useTasks } from '../context/TaskContext'
 export default function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(null)
-    const { tasks, toggleTaskComplete, deleteTask, toggleSubtaskComplete, getAllTasksWithRecurring } = useTasks()
+    const { tasks, toggleTaskComplete, deleteTask, toggleSubtaskComplete, getAllTasksWithRecurring, getTagColor } = useTasks()
     const navigate = useNavigate()
 
     const year = currentDate.getFullYear()
@@ -333,6 +333,20 @@ export default function Calendar() {
                                                                         )}
                                                                     </div>
                                                                 </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Task Tags */}
+                                                    {task.tags && task.tags.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-3">
+                                                            {task.tags.map(tag => (
+                                                                <span
+                                                                    key={tag}
+                                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getTagColor(tag)}`}
+                                                                >
+                                                                    🏷️ {tag}
+                                                                </span>
                                                             ))}
                                                         </div>
                                                     )}

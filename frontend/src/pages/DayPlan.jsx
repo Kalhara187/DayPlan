@@ -4,14 +4,17 @@ import Navbar from '../navbar/Navbar'
 import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
-    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete } = useTasks()
+    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete, cancelRecurringTask, deleteRecurringSeries, getAllTasksWithRecurring } = useTasks()
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
         startTime: '',
         endTime: '',
         priority: 'medium',
-        category: 'work'
+        category: 'work',
+        isRecurring: false,
+        recurrenceType: null,
+        recurrenceEndDate: ''
     })
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
     const [expandedTasks, setExpandedTasks] = useState({})
@@ -36,7 +39,10 @@ export default function DayPlan() {
                 startTime: '',
                 endTime: '',
                 priority: 'medium',
-                category: 'work'
+                category: 'work',
+                isRecurring: false,
+                recurrenceType: null,
+                recurrenceEndDate: ''
             })
         }
     }
@@ -141,7 +147,10 @@ export default function DayPlan() {
         }
     }
 
-    const dateTasks = tasks.filter(t => t.date === selectedDate)
+    const dateTasks = tasks.filter(t => t.date === selectedDate && !t.recurringParentId)
+        .concat(
+            getAllTasksWithRecurring(selectedDate, selectedDate).filter(t => t.date === selectedDate && t.isRecurringInstance)
+        )
 
     const stats = {
         total: dateTasks.length,
@@ -311,6 +320,62 @@ export default function DayPlan() {
                                         </select>
                                     </div>
 
+                                    {/* Recurring Task Options */}
+                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                                        <div className="flex items-center space-x-2 mb-3">
+                                            <input
+                                                type="checkbox"
+                                                id="isRecurring"
+                                                checked={newTask.isRecurring}
+                                                onChange={(e) => setNewTask({
+                                                    ...newTask,
+                                                    isRecurring: e.target.checked,
+                                                    recurrenceType: e.target.checked ? 'daily' : null,
+                                                    recurrenceEndDate: e.target.checked ? newTask.recurrenceEndDate : ''
+                                                })}
+                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                            />
+                                            <label htmlFor="isRecurring" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                                                🔁 Make this a recurring task
+                                            </label>
+                                        </div>
+
+                                        {newTask.isRecurring && (
+                                            <div className="space-y-3 pl-6 border-l-2 border-blue-500">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        Repeat
+                                                    </label>
+                                                    <select
+                                                        value={newTask.recurrenceType || 'daily'}
+                                                        onChange={(e) => setNewTask({ ...newTask, recurrenceType: e.target.value })}
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                                    >
+                                                        <option value="daily">Daily</option>
+                                                        <option value="weekly">Weekly</option>
+                                                        <option value="monthly">Monthly</option>
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        End Date (optional)
+                                                    </label>
+                                                    <input
+                                                        type="date"
+                                                        value={newTask.recurrenceEndDate}
+                                                        onChange={(e) => setNewTask({ ...newTask, recurrenceEndDate: e.target.value })}
+                                                        min={selectedDate}
+                                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                                                    />
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        Leave empty for indefinite recurrence
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <button
                                         type="submit"
                                         className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-all transform hover:scale-105"
@@ -403,6 +468,19 @@ export default function DayPlan() {
                                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                                                         </svg>
                                                                         {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                                                                    </span>
+                                                                )}
+                                                                {task.isRecurring && !task.isRecurringInstance && (
+                                                                    <span className="flex items-center px-2 py-1 bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
+                                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                        </svg>
+                                                                        {task.recurrenceType?.charAt(0).toUpperCase() + task.recurrenceType?.slice(1)}
+                                                                    </span>
+                                                                )}
+                                                                {task.isRecurringInstance && (
+                                                                    <span className="flex items-center px-2 py-1 bg-cyan-50 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-400 rounded-full text-xs font-medium">
+                                                                        🔁 Recurring instance
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -526,14 +604,45 @@ export default function DayPlan() {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <button
-                                                        onClick={() => handleDeleteTask(task.id)}
-                                                        className="ml-4 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
+                                                    <div className="ml-4 flex items-center space-x-2">
+                                                        {task.isRecurring && !task.isRecurringInstance && (
+                                                            <div className="relative group">
+                                                                <button className="p-1 text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 transition-colors">
+                                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                                    </svg>
+                                                                </button>
+                                                                <div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-700">
+                                                                    <button
+                                                                        onClick={() => cancelRecurringTask(task.id)}
+                                                                        className="flex items-center w-full px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                    >
+                                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                                        </svg>
+                                                                        Cancel Recurrence
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => deleteRecurringSeries(task.id)}
+                                                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                    >
+                                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                        </svg>
+                                                                        Delete Series
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDeleteTask(task.id)}
+                                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                                                        >
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}

@@ -6,7 +6,7 @@ import { useTasks } from '../context/TaskContext'
 export default function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(null)
-    const { tasks, toggleTaskComplete, deleteTask, toggleSubtaskComplete } = useTasks()
+    const { tasks, toggleTaskComplete, deleteTask, toggleSubtaskComplete, getAllTasksWithRecurring } = useTasks()
     const navigate = useNavigate()
 
     const year = currentDate.getFullYear()
@@ -35,7 +35,9 @@ export default function Calendar() {
 
     const getTasksForDate = (date) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
-        return tasks.filter(task => task.date === dateStr)
+        // Get both regular tasks and recurring instances for this date
+        const allTasks = getAllTasksWithRecurring(dateStr, dateStr)
+        return allTasks.filter(task => task.date === dateStr)
     }
 
     const handleDateClick = (date) => {
@@ -56,7 +58,7 @@ export default function Calendar() {
         }
     }
 
-    const selectedDateTasks = selectedDate ? tasks.filter(task => task.date === selectedDate) : []
+    const selectedDateTasks = selectedDate ? getAllTasksWithRecurring(selectedDate, selectedDate).filter(task => task.date === selectedDate) : []
 
     const renderCalendarDays = () => {
         const days = []
@@ -104,9 +106,9 @@ export default function Calendar() {
                                                 : task.priority === 'medium'
                                                     ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
                                                     : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                                                }`}
+                                                } ${task.isRecurringInstance ? 'border-l-2 border-cyan-500' : ''}`}
                                         >
-                                            {task.completed ? '✓ ' : ''}{task.title}
+                                            {task.isRecurringInstance ? '🔁 ' : ''}{task.completed ? '✓ ' : ''}{task.title}
                                         </div>
                                     ))}
                                     {dayTasks.length > 2 && (
@@ -292,6 +294,19 @@ export default function Calendar() {
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                                                 </svg>
                                                                 {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                                                            </span>
+                                                        )}
+                                                        {task.isRecurring && !task.isRecurringInstance && (
+                                                            <span className="flex items-center px-2 py-0.5 bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
+                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                {task.recurrenceType}
+                                                            </span>
+                                                        )}
+                                                        {task.isRecurringInstance && (
+                                                            <span className="flex items-center px-2 py-0.5 bg-cyan-50 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-400 rounded-full text-xs font-medium">
+                                                                🔁 Recurring
                                                             </span>
                                                         )}
                                                     </div>

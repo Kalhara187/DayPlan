@@ -18,6 +18,10 @@ export function TaskProvider({ children }) {
             id: Date.now(),
             completed: false,
             subtasks: [],
+            isRecurring: task.isRecurring || false,
+            recurrenceType: task.recurrenceType || null,
+            recurrenceEndDate: task.recurrenceEndDate || null,
+            recurringParentId: task.recurringParentId || null,
             createdAt: new Date().toISOString()
         }
         setTasks([...tasks, newTask])
@@ -109,6 +113,60 @@ export function TaskProvider({ children }) {
         }))
     }
 
+    // Recurring task functions
+    const generateRecurringInstances = (startDate, endDate) => {
+        const instances = []
+        const recurringTasks = tasks.filter(task => task.isRecurring && !task.recurringParentId)
+
+        recurringTasks.forEach(task => {
+            const taskDate = new Date(task.date)
+            const start = new Date(startDate)
+            const end = new Date(endDate)
+            const recurrenceEnd = task.recurrenceEndDate ? new Date(task.recurrenceEndDate) : new Date(end.getTime() + 365 * 24 * 60 * 60 * 1000)
+
+            let currentDate = new Date(taskDate)
+
+            while (currentDate <= end && currentDate <= recurrenceEnd) {
+                if (currentDate >= start && currentDate.toISOString().split('T')[0] !== task.date) {
+                    instances.push({
+                        ...task,
+                        id: `${task.id}-${currentDate.toISOString().split('T')[0]}`,
+                        date: currentDate.toISOString().split('T')[0],
+                        recurringParentId: task.id,
+                        isRecurringInstance: true
+                    })
+                }
+
+                // Calculate next occurrence
+                if (task.recurrenceType === 'daily') {
+                    currentDate.setDate(currentDate.getDate() + 1)
+                } else if (task.recurrenceType === 'weekly') {
+                    currentDate.setDate(currentDate.getDate() + 7)
+                } else if (task.recurrenceType === 'monthly') {
+                    currentDate.setMonth(currentDate.getMonth() + 1)
+                }
+            }
+        })
+
+        return instances
+    }
+
+    const cancelRecurringTask = (taskId) => {
+        setTasks(tasks.map(task =>
+            task.id === taskId ? { ...task, isRecurring: false, recurrenceType: null, recurrenceEndDate: null } : task
+        ))
+    }
+
+    const deleteRecurringSeries = (taskId) => {
+        setTasks(tasks.filter(task => task.id !== taskId && task.recurringParentId !== taskId))
+    }
+
+    const getAllTasksWithRecurring = (startDate, endDate) => {
+        const regularTasks = tasks.filter(task => !task.recurringParentId)
+        const recurringInstances = generateRecurringInstances(startDate, endDate)
+        return [...regularTasks, ...recurringInstances]
+    }
+
     return (
         <TaskContext.Provider value={{
             tasks,
@@ -121,7 +179,11 @@ export function TaskProvider({ children }) {
             addSubtask,
             updateSubtask,
             deleteSubtask,
-            toggleSubtaskComplete
+            toggleSubtaskComplete,
+            generateRecurringInstances,
+            cancelRecurringTask,
+            deleteRecurringSeries,
+            getAllTasksWithRecurring
         }}>
             {children}
         </TaskContext.Provider>

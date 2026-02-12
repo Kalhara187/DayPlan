@@ -350,6 +350,30 @@ export default function Calendar() {
                                                             ))}
                                                         </div>
                                                     )}
+
+                                                    {/* Attachments */}
+                                                    {task.attachments && task.attachments.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                                            <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                                </svg>
+                                                                Attachments ({task.attachments.length})
+                                                            </h5>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {task.attachments.map(file => (
+                                                                    <div
+                                                                        key={file.id}
+                                                                        className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg text-xs"
+                                                                    >
+                                                                        <span className="text-base">{file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : file.type.includes('doc') ? '📝' : file.type.includes('sheet') || file.type.includes('excel') ? '📊' : file.type.includes('video') ? '🎥' : '📎'}</span>
+                                                                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[150px]">{file.name}</span>
+                                                                        <span className="text-gray-500 text-[10px]">({Math.round(file.size / 1024)} KB)</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

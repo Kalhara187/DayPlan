@@ -17,6 +17,7 @@ export function TaskProvider({ children }) {
             ...task,
             id: Date.now(),
             completed: false,
+            subtasks: [],
             createdAt: new Date().toISOString()
         }
         setTasks([...tasks, newTask])
@@ -49,6 +50,65 @@ export function TaskProvider({ children }) {
         })
     }
 
+    // Subtask management functions
+    const addSubtask = (taskId, subtask) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                const newSubtask = {
+                    ...subtask,
+                    id: Date.now() + Math.random(), // Ensure unique ID
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                }
+                return {
+                    ...task,
+                    subtasks: [...(task.subtasks || []), newSubtask]
+                }
+            }
+            return task
+        }))
+    }
+
+    const updateSubtask = (taskId, subtaskId, updates) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                return {
+                    ...task,
+                    subtasks: (task.subtasks || []).map(subtask =>
+                        subtask.id === subtaskId ? { ...subtask, ...updates } : subtask
+                    )
+                }
+            }
+            return task
+        }))
+    }
+
+    const deleteSubtask = (taskId, subtaskId) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                return {
+                    ...task,
+                    subtasks: (task.subtasks || []).filter(subtask => subtask.id !== subtaskId)
+                }
+            }
+            return task
+        }))
+    }
+
+    const toggleSubtaskComplete = (taskId, subtaskId) => {
+        setTasks(tasks.map(task => {
+            if (task.id === taskId) {
+                return {
+                    ...task,
+                    subtasks: (task.subtasks || []).map(subtask =>
+                        subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask
+                    )
+                }
+            }
+            return task
+        }))
+    }
+
     return (
         <TaskContext.Provider value={{
             tasks,
@@ -57,7 +117,11 @@ export function TaskProvider({ children }) {
             deleteTask,
             toggleTaskComplete,
             getTasksByDate,
-            getTasksForMonth
+            getTasksForMonth,
+            addSubtask,
+            updateSubtask,
+            deleteSubtask,
+            toggleSubtaskComplete
         }}>
             {children}
         </TaskContext.Provider>

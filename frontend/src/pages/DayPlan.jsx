@@ -4,7 +4,7 @@ import Navbar from '../navbar/Navbar'
 import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
-    const { tasks, addTask, deleteTask, toggleTaskComplete } = useTasks()
+    const { tasks, addTask, deleteTask, toggleTaskComplete, addSubtask, updateSubtask, deleteSubtask, toggleSubtaskComplete } = useTasks()
     const [newTask, setNewTask] = useState({
         title: '',
         description: '',
@@ -14,6 +14,9 @@ export default function DayPlan() {
         category: 'work'
     })
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    const [expandedTasks, setExpandedTasks] = useState({})
+    const [newSubtask, setNewSubtask] = useState({})
+    const [editingSubtask, setEditingSubtask] = useState({ taskId: null, subtaskId: null })
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -44,6 +47,50 @@ export default function DayPlan() {
 
     const handleToggleComplete = (id) => {
         toggleTaskComplete(id)
+    }
+
+    const toggleTaskExpanded = (taskId) => {
+        setExpandedTasks(prev => ({
+            ...prev,
+            [taskId]: !prev[taskId]
+        }))
+    }
+
+    const handleAddSubtask = (taskId, e) => {
+        e.preventDefault()
+        const subtask = newSubtask[taskId]
+        if (subtask && subtask.title && subtask.title.trim()) {
+            addSubtask(taskId, {
+                title: subtask.title,
+                description: subtask.description || ''
+            })
+            setNewSubtask(prev => ({
+                ...prev,
+                [taskId]: { title: '', description: '' }
+            }))
+        }
+    }
+
+    const handleDeleteSubtask = (taskId, subtaskId) => {
+        deleteSubtask(taskId, subtaskId)
+    }
+
+    const handleToggleSubtaskComplete = (taskId, subtaskId) => {
+        toggleSubtaskComplete(taskId, subtaskId)
+    }
+
+    const handleEditSubtask = (taskId, subtaskId, updates) => {
+        updateSubtask(taskId, subtaskId, updates)
+        setEditingSubtask({ taskId: null, subtaskId: null })
+    }
+
+    const initNewSubtask = (taskId) => {
+        if (!newSubtask[taskId]) {
+            setNewSubtask(prev => ({
+                ...prev,
+                [taskId]: { title: '', description: '' }
+            }))
+        }
     }
 
     const getPriorityColor = (priority) => {
@@ -314,9 +361,21 @@ export default function DayPlan() {
                                                             className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                                         />
                                                         <div className="flex-1">
-                                                            <h3 className={`text-lg font-semibold ${task.completed ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
-                                                                {task.title}
-                                                            </h3>
+                                                            <div className="flex items-center justify-between">
+                                                                <h3 className={`text-lg font-semibold ${task.completed ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                                                                    {task.title}
+                                                                </h3>
+                                                                {task.subtasks && task.subtasks.length > 0 && (
+                                                                    <button
+                                                                        onClick={() => toggleTaskExpanded(task.id)}
+                                                                        className="ml-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                                                                    >
+                                                                        <svg className={`w-5 h-5 transform transition-transform ${expandedTasks[task.id] ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                        </svg>
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             {task.description && (
                                                                 <p className={`text-sm mt-1 ${task.completed ? 'line-through text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
                                                                     {task.description}
@@ -338,7 +397,133 @@ export default function DayPlan() {
                                                                     {getCategoryIcon(task.category)}
                                                                     <span className="ml-1 capitalize">{task.category}</span>
                                                                 </span>
+                                                                {task.subtasks && task.subtasks.length > 0 && (
+                                                                    <span className="flex items-center px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                                                                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                                        </svg>
+                                                                        {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} subtasks
+                                                                    </span>
+                                                                )}
                                                             </div>
+
+                                                            {/* Subtasks Section */}
+                                                            {expandedTasks[task.id] && (
+                                                                <div className="mt-4 pl-4 border-l-2 border-gray-300 dark:border-gray-600 space-y-2">
+                                                                    <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Subtasks:</h4>
+
+                                                                    {/* Existing Subtasks */}
+                                                                    {task.subtasks && task.subtasks.length > 0 && (
+                                                                        <div className="space-y-2">
+                                                                            {task.subtasks.map((subtask) => (
+                                                                                <div key={subtask.id} className="flex items-start space-x-2 bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        checked={subtask.completed}
+                                                                                        onChange={() => handleToggleSubtaskComplete(task.id, subtask.id)}
+                                                                                        className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                                                                    />
+                                                                                    {editingSubtask.taskId === task.id && editingSubtask.subtaskId === subtask.id ? (
+                                                                                        <div className="flex-1 space-y-1">
+                                                                                            <input
+                                                                                                type="text"
+                                                                                                defaultValue={subtask.title}
+                                                                                                onBlur={(e) => handleEditSubtask(task.id, subtask.id, { title: e.target.value })}
+                                                                                                onKeyPress={(e) => {
+                                                                                                    if (e.key === 'Enter') {
+                                                                                                        handleEditSubtask(task.id, subtask.id, { title: e.target.value })
+                                                                                                    }
+                                                                                                }}
+                                                                                                autoFocus
+                                                                                                className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                                                                            />
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <div className="flex-1">
+                                                                                            <p className={`text-sm ${subtask.completed ? 'line-through text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                                                                                                {subtask.title}
+                                                                                            </p>
+                                                                                            {subtask.description && (
+                                                                                                <p className={`text-xs mt-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                                                                    {subtask.description}
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    <div className="flex space-x-1">
+                                                                                        <button
+                                                                                            onClick={() => setEditingSubtask({ taskId: task.id, subtaskId: subtask.id })}
+                                                                                            className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                                                                        >
+                                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                                                            </svg>
+                                                                                        </button>
+                                                                                        <button
+                                                                                            onClick={() => handleDeleteSubtask(task.id, subtask.id)}
+                                                                                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                                                                        >
+                                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                                            </svg>
+                                                                                        </button>
+                                                                                    </div>
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* Add New Subtask Form */}
+                                                                    <form onSubmit={(e) => handleAddSubtask(task.id, e)} className="mt-3">
+                                                                        <div className="flex flex-col space-y-2">
+                                                                            <input
+                                                                                type="text"
+                                                                                value={newSubtask[task.id]?.title || ''}
+                                                                                onChange={(e) => setNewSubtask(prev => ({
+                                                                                    ...prev,
+                                                                                    [task.id]: { ...prev[task.id], title: e.target.value }
+                                                                                }))}
+                                                                                onFocus={() => initNewSubtask(task.id)}
+                                                                                placeholder="Add a subtask..."
+                                                                                className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                                            />
+                                                                            {newSubtask[task.id]?.title && (
+                                                                                <>
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={newSubtask[task.id]?.description || ''}
+                                                                                        onChange={(e) => setNewSubtask(prev => ({
+                                                                                            ...prev,
+                                                                                            [task.id]: { ...prev[task.id], description: e.target.value }
+                                                                                        }))}
+                                                                                        placeholder="Description (optional)"
+                                                                                        className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                                                                    />
+                                                                                    <button
+                                                                                        type="submit"
+                                                                                        className="px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                                                                                    >
+                                                                                        Add Subtask
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    </form>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Toggle Subtasks Button when collapsed */}
+                                                            {!expandedTasks[task.id] && task.subtasks && task.subtasks.length === 0 && (
+                                                                <button
+                                                                    onClick={() => toggleTaskExpanded(task.id)}
+                                                                    className="mt-3 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center"
+                                                                >
+                                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                                                    </svg>
+                                                                    Add subtasks
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <button

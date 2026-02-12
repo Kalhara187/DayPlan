@@ -8,6 +8,7 @@ import Home from './pages/Home.jsx'
 import Settings from './pages/Settings.jsx'
 import DayPlan from './pages/DayPlan.jsx'
 import Calendar from './pages/Calendar.jsx'
+import Reports from './pages/Reports.jsx'
 import Navbar from './navbar/Navbar.jsx'
 
 export default function App() {
@@ -30,7 +31,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
             <Route path="/calendar" element={<Calendar />} />
-            <Route path="/reports" element={<><Navbar /><div className="pt-16">Reports Content</div></>} />
+            <Route path="/reports" element={<Reports />} />
 
             {/* Catch all - redirect to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

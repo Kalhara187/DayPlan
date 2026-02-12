@@ -6,7 +6,7 @@ import { useTasks } from '../context/TaskContext'
 export default function Calendar() {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState(null)
-    const { tasks, toggleTaskComplete, deleteTask } = useTasks()
+    const { tasks, toggleTaskComplete, deleteTask, toggleSubtaskComplete, getAllTasksWithRecurring, getTagColor } = useTasks()
     const navigate = useNavigate()
 
     const year = currentDate.getFullYear()
@@ -35,7 +35,9 @@ export default function Calendar() {
 
     const getTasksForDate = (date) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}`
-        return tasks.filter(task => task.date === dateStr)
+        // Get both regular tasks and recurring instances for this date
+        const allTasks = getAllTasksWithRecurring(dateStr, dateStr)
+        return allTasks.filter(task => task.date === dateStr)
     }
 
     const handleDateClick = (date) => {
@@ -56,7 +58,7 @@ export default function Calendar() {
         }
     }
 
-    const selectedDateTasks = selectedDate ? tasks.filter(task => task.date === selectedDate) : []
+    const selectedDateTasks = selectedDate ? getAllTasksWithRecurring(selectedDate, selectedDate).filter(task => task.date === selectedDate) : []
 
     const renderCalendarDays = () => {
         const days = []
@@ -82,14 +84,14 @@ export default function Calendar() {
                     key={date}
                     onClick={() => handleDateClick(date)}
                     className={`aspect-square p-2 border-2 cursor-pointer transition-all hover:border-blue-400 dark:hover:border-blue-500 ${isSelected
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                        : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
                         } ${isToday ? 'ring-2 ring-purple-500' : ''}`}
                 >
                     <div className="h-full flex flex-col">
                         <div className={`text-sm font-semibold mb-1 ${isToday
-                                ? 'text-purple-600 dark:text-purple-400'
-                                : 'text-gray-900 dark:text-white'
+                            ? 'text-purple-600 dark:text-purple-400'
+                            : 'text-gray-900 dark:text-white'
                             }`}>
                             {date}
                         </div>
@@ -100,13 +102,13 @@ export default function Calendar() {
                                         <div
                                             key={task.id}
                                             className={`text-xs px-1 py-0.5 rounded truncate ${task.priority === 'high'
-                                                    ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-                                                    : task.priority === 'medium'
-                                                        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
-                                                        : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                                                }`}
+                                                ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                                                : task.priority === 'medium'
+                                                    ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                                                    : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                                                } ${task.isRecurringInstance ? 'border-l-2 border-cyan-500' : ''}`}
                                         >
-                                            {task.completed ? '✓ ' : ''}{task.title}
+                                            {task.isRecurringInstance ? '🔁 ' : ''}{task.completed ? '✓ ' : ''}{task.title}
                                         </div>
                                     ))}
                                     {dayTasks.length > 2 && (
@@ -233,8 +235,8 @@ export default function Calendar() {
                                                 <div
                                                     key={task.id}
                                                     className={`border-l-4 ${task.completed
-                                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                                            : 'border-blue-500 bg-white dark:bg-gray-700'
+                                                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                                        : 'border-blue-500 bg-white dark:bg-gray-700'
                                                         } rounded-lg p-3 shadow-sm`}
                                                 >
                                                     <div className="flex items-start justify-between mb-2">
@@ -247,15 +249,15 @@ export default function Calendar() {
                                                             />
                                                             <div className="flex-1">
                                                                 <h4 className={`font-semibold ${task.completed
-                                                                        ? 'line-through text-gray-500'
-                                                                        : 'text-gray-900 dark:text-white'
+                                                                    ? 'line-through text-gray-500'
+                                                                    : 'text-gray-900 dark:text-white'
                                                                     }`}>
                                                                     {task.title}
                                                                 </h4>
                                                                 {task.description && (
                                                                     <p className={`text-sm mt-1 ${task.completed
-                                                                            ? 'line-through text-gray-400'
-                                                                            : 'text-gray-600 dark:text-gray-400'
+                                                                        ? 'line-through text-gray-400'
+                                                                        : 'text-gray-600 dark:text-gray-400'
                                                                         }`}>
                                                                         {task.description}
                                                                     </p>
@@ -286,7 +288,92 @@ export default function Calendar() {
                                                         <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-xs capitalize">
                                                             {task.category}
                                                         </span>
+                                                        {task.subtasks && task.subtasks.length > 0 && (
+                                                            <span className="flex items-center px-2 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-xs font-medium">
+                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                                </svg>
+                                                                {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                                                            </span>
+                                                        )}
+                                                        {task.isRecurring && !task.isRecurringInstance && (
+                                                            <span className="flex items-center px-2 py-0.5 bg-cyan-100 dark:bg-cyan-900 text-cyan-700 dark:text-cyan-300 rounded-full text-xs font-medium">
+                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                {task.recurrenceType}
+                                                            </span>
+                                                        )}
+                                                        {task.isRecurringInstance && (
+                                                            <span className="flex items-center px-2 py-0.5 bg-cyan-50 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-400 rounded-full text-xs font-medium">
+                                                                🔁 Recurring
+                                                            </span>
+                                                        )}
                                                     </div>
+
+                                                    {/* Subtasks */}
+                                                    {task.subtasks && task.subtasks.length > 0 && (
+                                                        <div className="mt-3 pl-3 border-l-2 border-gray-300 dark:border-gray-600 space-y-1">
+                                                            {task.subtasks.map((subtask) => (
+                                                                <div key={subtask.id} className="flex items-start space-x-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={subtask.completed}
+                                                                        onChange={() => toggleSubtaskComplete(task.id, subtask.id)}
+                                                                        className="mt-1 h-3 w-3 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                                                    />
+                                                                    <div className="flex-1">
+                                                                        <p className={`text-xs ${subtask.completed ? 'line-through text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                                            {subtask.title}
+                                                                        </p>
+                                                                        {subtask.description && (
+                                                                            <p className={`text-xs ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                                                {subtask.description}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Task Tags */}
+                                                    {task.tags && task.tags.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-3">
+                                                            {task.tags.map(tag => (
+                                                                <span
+                                                                    key={tag}
+                                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getTagColor(tag)}`}
+                                                                >
+                                                                    🏷️ {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Attachments */}
+                                                    {task.attachments && task.attachments.length > 0 && (
+                                                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                                            <h5 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                                                </svg>
+                                                                Attachments ({task.attachments.length})
+                                                            </h5>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {task.attachments.map(file => (
+                                                                    <div
+                                                                        key={file.id}
+                                                                        className="flex items-center space-x-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg text-xs"
+                                                                    >
+                                                                        <span className="text-base">{file.type.startsWith('image/') ? '🖼️' : file.type.includes('pdf') ? '📄' : file.type.includes('doc') ? '📝' : file.type.includes('sheet') || file.type.includes('excel') ? '📊' : file.type.includes('video') ? '🎥' : '📎'}</span>
+                                                                        <span className="text-gray-700 dark:text-gray-300 truncate max-w-[150px]">{file.name}</span>
+                                                                        <span className="text-gray-500 text-[10px]">({Math.round(file.size / 1024)} KB)</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>

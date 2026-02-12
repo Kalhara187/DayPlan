@@ -252,6 +252,192 @@ export function TaskProvider({ children }) {
         }))
     }
 
+    // Export to CSV
+    const exportToCSV = (tasksToExport, filename = 'tasks-export.csv') => {
+        if (!tasksToExport || tasksToExport.length === 0) {
+            alert('No tasks to export')
+            return
+        }
+
+        // CSV headers
+        const headers = ['Title', 'Description', 'Date', 'Start Time', 'End Time', 'Priority', 'Category', 'Status', 'Tags', 'Subtasks', 'Attachments']
+
+        // Convert tasks to CSV rows
+        const rows = tasksToExport.map(task => {
+            const subtasksText = task.subtasks && task.subtasks.length > 0
+                ? task.subtasks.map(st => `${st.completed ? '✓' : '○'} ${st.title}`).join(' | ')
+                : 'None'
+
+            const tagsText = task.tags && task.tags.length > 0 ? task.tags.join(', ') : 'None'
+            const attachmentsText = task.attachments && task.attachments.length > 0
+                ? task.attachments.map(a => a.name).join(', ')
+                : 'None'
+
+            return [
+                `"${task.title || ''}"`,
+                `"${task.description || ''}"`,
+                task.date || '',
+                task.startTime || '',
+                task.endTime || '',
+                task.priority || '',
+                task.category || '',
+                task.completed ? 'Completed' : 'Pending',
+                `"${tagsText}"`,
+                `"${subtasksText}"`,
+                `"${attachmentsText}"`
+            ].join(',')
+        })
+
+        // Combine headers and rows
+        const csv = [headers.join(','), ...rows].join('\n')
+
+        // Create blob and download
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        const url = URL.createObjectURL(blob)
+        link.setAttribute('href', url)
+        link.setAttribute('download', filename)
+        link.style.visibility = 'hidden'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    }
+
+    // Export to PDF
+    const exportToPDF = async (tasksToExport, filename = 'tasks-export.pdf') => {
+        if (!tasksToExport || tasksToExport.length === 0) {
+            alert('No tasks to export')
+            return
+        }
+
+        try {
+            // Dynamic import to reduce bundle size
+            const { jsPDF } = await import('jspdf')
+            const doc = new jsPDF()
+
+            // Title
+            doc.setFontSize(20)
+            doc.setFont(undefined, 'bold')
+            doc.text('Task Report', 14, 20)
+
+            // Export date
+            doc.setFontSize(10)
+            doc.setFont(undefined, 'normal')
+            doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28)
+            doc.text(`Total Tasks: ${tasksToExport.length}`, 14, 34)
+
+            let yPosition = 45
+            const pageHeight = doc.internal.pageSize.height
+            const margin = 14
+
+            tasksToExport.forEach((task, index) => {
+                // Check if we need a new page
+                if (yPosition > pageHeight - 40) {
+                    doc.addPage()
+                    yPosition = 20
+                }
+
+                // Task number and title
+                doc.setFontSize(12)
+                doc.setFont(undefined, 'bold')
+                doc.text(`${index + 1}. ${task.title}`, margin, yPosition)
+                yPosition += 6
+
+                // Task details
+                doc.setFontSize(9)
+                doc.setFont(undefined, 'normal')
+
+                if (task.description) {
+                    const descLines = doc.splitTextToSize(`Description: ${task.description}`, 180)
+                    doc.text(descLines, margin + 5, yPosition)
+                    yPosition += descLines.length * 5
+                }
+
+                doc.text(`Date: ${task.date || 'N/A'}`, margin + 5, yPosition)
+                yPosition += 5
+
+                if (task.startTime) {
+                    doc.text(`Time: ${task.startTime}${task.endTime ? ` - ${task.endTime}` : ''}`, margin + 5, yPosition)
+                    yPosition += 5
+                }
+
+                doc.text(`Priority: ${task.priority?.toUpperCase() || 'N/A'} | Category: ${task.category || 'N/A'}`, margin + 5, yPosition)
+                yPosition += 5
+
+                doc.text(`Status: ${task.completed ? '✓ Completed' : '○ Pending'}`, margin + 5, yPosition)
+                yPosition += 5
+
+                if (task.tags && task.tags.length > 0) {
+                    doc.text(`Tags: ${task.tags.join(', ')}`, margin + 5, yPosition)
+                    yPosition += 5
+                }
+
+                if (task.subtasks && task.subtasks.length > 0) {
+                    doc.text(`Subtasks (${task.subtasks.filter(st => st.completed).length}/${task.subtasks.length}):`, margin + 5, yPosition)
+                    yPosition += 5
+                    task.subtasks.slice(0, 5).forEach(subtask => { // Limit to 5 subtasks
+                        doc.text(`  ${subtask.completed ? '✓' : '○'} ${subtask.title}`, margin + 10, yPosition)
+                        yPosition += 4
+                    })
+                    if (task.subtasks.length > 5) {
+                        doc.text(`  ... and ${task.subtasks.length - 5} more`, margin + 10, yPosition)
+                        yPosition += 4
+                    }
+                }
+
+                if (task.attachments && task.attachments.length > 0) {
+                    doc.text(`Attachments: ${task.attachments.map(a => a.name).join(', ')}`, margin + 5, yPosition)
+                    yPosition += 5
+                }
+
+                yPosition += 5 // Space between tasks
+            })
+
+            // Save PDF
+            doc.save(filename)
+        } catch (error) {
+            console.error('Error generating PDF:', error)
+            alert('Failed to generate PDF. Please make sure jsPDF is installed.')
+        }
+    }
+
+    // Filter tasks by criteria
+    const filterTasks = (filters = {}) => {
+        const { startDate, endDate, category, priority, status } = filters
+
+        let filtered = [...tasks]
+
+        // Filter by date range
+        if (startDate && endDate) {
+            filtered = filtered.filter(task => {
+                if (!task.date) return false
+                const taskDate = new Date(task.date)
+                const start = new Date(startDate)
+                const end = new Date(endDate)
+                return taskDate >= start && taskDate <= end
+            })
+        }
+
+        // Filter by category
+        if (category && category !== 'all') {
+            filtered = filtered.filter(task => task.category === category)
+        }
+
+        // Filter by priority
+        if (priority && priority !== 'all') {
+            filtered = filtered.filter(task => task.priority === priority)
+        }
+
+        // Filter by status
+        if (status === 'completed') {
+            filtered = filtered.filter(task => task.completed)
+        } else if (status === 'pending') {
+            filtered = filtered.filter(task => !task.completed)
+        }
+
+        return filtered
+    }
+
     return (
         <TaskContext.Provider value={{
             tasks,
@@ -276,7 +462,10 @@ export function TaskProvider({ children }) {
             removeTagFromTask,
             getTagColor,
             addAttachmentToTask,
-            removeAttachmentFromTask
+            removeAttachmentFromTask,
+            exportToCSV,
+            exportToPDF,
+            filterTasks
         }}>
             {children}
         </TaskContext.Provider>

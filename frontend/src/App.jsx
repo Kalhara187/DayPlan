@@ -17,7 +17,7 @@ export default function App() {
       <TaskProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public routes */}
+            {/*  Public routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/landing" element={<Landing />} />
             <Route path="/signin" element={<SignIn />} />

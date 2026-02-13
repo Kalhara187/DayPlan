@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTasks } from '../context/TaskContext'
 import Navbar from '../navbar/Navbar'
+import Footer from '../components/Footer'
 
 export default function Reports() {
     const { tasks, exportToCSV, exportToPDF, filterTasks } = useTasks()
@@ -412,6 +413,7 @@ export default function Reports() {
                     )}
                 </div>
             </div>
+            <Footer />
         </div>
     )
 }

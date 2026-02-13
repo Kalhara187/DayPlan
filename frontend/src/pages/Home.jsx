@@ -34,7 +34,7 @@ export default function Home() {
 
     const fetchNotificationSettings = async () => {
         try {
-            const response = await api.get('/api/notifications/settings')
+            const response = await api.get('/notifications/settings')
             if (response.data.status === 'success') {
                 setNotificationSettings(response.data.data)
             }
@@ -49,7 +49,7 @@ export default function Home() {
 
         try {
             const newValue = !notificationSettings.emailNotifications
-            const response = await api.put('/api/notifications/settings', {
+            const response = await api.put('/notifications/settings', {
                 emailNotifications: newValue
             })
 
@@ -79,7 +79,7 @@ export default function Home() {
         setNotificationSettings(prev => ({ ...prev, notificationTime: newTime }))
 
         try {
-            await api.put('/api/notifications/settings', {
+            await api.put('/notifications/settings', {
                 notificationTime: newTime
             })
             setMessage({
@@ -102,7 +102,7 @@ export default function Home() {
 
     const handleEmailBlur = async () => {
         try {
-            await api.put('/api/notifications/settings', {
+            await api.put('/notifications/settings', {
                 notificationEmail: notificationSettings.notificationEmail
             })
             setMessage({
@@ -123,7 +123,7 @@ export default function Home() {
         setMessage({ text: '', type: '' })
 
         try {
-            const response = await api.post('/api/notifications/test')
+            const response = await api.post('/notifications/test')
             if (response.data.status === 'success') {
                 setMessage({
                     text: `Test email sent to ${response.data.data.sentTo}!`,

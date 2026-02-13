@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import User from '../models/User.js';
+import Task from '../models/Task.js';
 import { sendDailyTaskNotification } from './emailService.js';
 
 // Function to check and send notifications
@@ -25,8 +26,18 @@ const checkAndSendNotifications = async () => {
             for (const user of users) {
                 try {
                     const emailToSend = user.notificationEmail || user.email;
-                    await sendDailyTaskNotification(emailToSend, user.fullName);
-                    console.log(`Notification sent to ${user.fullName} at ${emailToSend}`);
+                    
+                    // Get today's date in YYYY-MM-DD format
+                    const today = new Date().toISOString().split('T')[0];
+                    
+                    // Fetch today's tasks for this user
+                    const todayTasks = await Task.find({
+                        user: user._id,
+                        date: today
+                    }).sort({ startTime: 1 });
+
+                    await sendDailyTaskNotification(emailToSend, user.fullName, todayTasks);
+                    console.log(`Notification sent to ${user.fullName} at ${emailToSend} (${todayTasks.length} tasks)`);
                 } catch (error) {
                     console.error(`Failed to send notification to ${user.fullName}:`, error.message);
                 }

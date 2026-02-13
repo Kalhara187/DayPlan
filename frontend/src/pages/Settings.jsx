@@ -47,7 +47,7 @@ export default function Settings() {
 
     const fetchUserData = async () => {
         try {
-            const response = await api.get('/api/user/profile')
+            const response = await api.get('/user/profile')
             if (response.data.status === 'success') {
                 const userData = response.data.data.user
                 setUser(userData)
@@ -63,7 +63,7 @@ export default function Settings() {
 
     const fetchNotificationSettings = async () => {
         try {
-            const response = await api.get('/api/notifications/settings')
+            const response = await api.get('/notifications/settings')
             if (response.data.status === 'success') {
                 setNotificationSettings(response.data.data)
             }
@@ -78,7 +78,7 @@ export default function Settings() {
         setMessage({ text: '', type: '' })
 
         try {
-            const response = await api.put('/api/user/profile', profile)
+            const response = await api.put('/user/profile', profile)
             if (response.data.status === 'success') {
                 setMessage({ text: 'Profile updated successfully!', type: 'success' })
                 // Update localStorage
@@ -107,7 +107,7 @@ export default function Settings() {
         }
 
         try {
-            const response = await api.put('/api/user/password', {
+            const response = await api.put('/user/password', {
                 currentPassword: passwordData.currentPassword,
                 newPassword: passwordData.newPassword
             })
@@ -129,7 +129,7 @@ export default function Settings() {
         setLoading(true)
         try {
             const newValue = !notificationSettings.emailNotifications
-            const response = await api.put('/api/notifications/settings', {
+            const response = await api.put('/notifications/settings', {
                 emailNotifications: newValue
             })
             if (response.data.status === 'success') {
@@ -151,7 +151,7 @@ export default function Settings() {
         const newTime = e.target.value
         setNotificationSettings(prev => ({ ...prev, notificationTime: newTime }))
         try {
-            await api.put('/api/notifications/settings', { notificationTime: newTime })
+            await api.put('/notifications/settings', { notificationTime: newTime })
             setMessage({ text: 'Notification time updated!', type: 'success' })
         } catch (error) {
             console.error('Error updating notification time:', error)
@@ -164,7 +164,7 @@ export default function Settings() {
 
     const handleNotificationEmailBlur = async () => {
         try {
-            await api.put('/api/notifications/settings', {
+            await api.put('/notifications/settings', {
                 notificationEmail: notificationSettings.notificationEmail
             })
             setMessage({ text: 'Notification email updated!', type: 'success' })
@@ -176,7 +176,7 @@ export default function Settings() {
     const handleSendTestEmail = async () => {
         setLoading(true)
         try {
-            const response = await api.post('/api/notifications/test')
+            const response = await api.post('/notifications/test')
             if (response.data.status === 'success') {
                 setMessage({ text: `Test email sent to ${response.data.data.sentTo}!`, type: 'success' })
             }
@@ -193,7 +193,7 @@ export default function Settings() {
         setMessage({ text: '', type: '' })
 
         try {
-            const response = await api.delete('/api/user/account', {
+            const response = await api.delete('/user/account', {
                 data: { password: deletePassword }
             })
             if (response.data.status === 'success') {

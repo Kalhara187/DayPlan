@@ -1,4 +1,6 @@
 import Task from '../models/Task.js';
+import User from '../models/User.js';
+import { sendTaskCreatedEmail } from '../services/emailService.js';
 
 // Sample user for testing when database is not connected
 const SAMPLE_USER = {
@@ -102,6 +104,26 @@ export const createTask = async (req, res) => {
         };
 
         const task = await Task.create(taskData);
+
+        // Send email notification if user has email notifications enabled
+        try {
+            const user = await User.findById(userId);
+            if (user && user.emailNotifications) {
+                const emailToSend = user.notificationEmail || user.email;
+                await sendTaskCreatedEmail(emailToSend, user.fullName, {
+                    title: task.title,
+                    description: task.description,
+                    date: task.date,
+                    startTime: task.startTime,
+                    endTime: task.endTime,
+                    priority: task.priority,
+                    category: task.category
+                });
+            }
+        } catch (emailError) {
+            console.error('Failed to send task creation email:', emailError.message);
+            // Don't fail the task creation if email fails
+        }
 
         res.status(201).json({
             status: 'success',

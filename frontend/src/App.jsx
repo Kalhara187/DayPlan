@@ -11,6 +11,7 @@ import Settings from './pages/Settings.jsx'
 import DayPlan from './pages/DayPlan.jsx'
 import Calendar from './pages/Calendar.jsx'
 import Reports from './pages/Reports.jsx'
+import MyTasks from './pages/MyTasks.jsx'
 import Navbar from './navbar/Navbar.jsx'
 
 export default function App() {
@@ -33,7 +34,7 @@ export default function App() {
             <Route path="/dayplan" element={<DayPlan />} />
 
             <Route path="/settings" element={<Settings />} />
-            <Route path="/tasks" element={<><Navbar /><div className="pt-16">Tasks Content</div></>} />
+            <Route path="/tasks" element={<MyTasks />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/reports" element={<Reports />} />
 

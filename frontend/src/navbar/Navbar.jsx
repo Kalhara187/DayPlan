@@ -71,7 +71,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-4">
             {/* Add Task Button */}
             <Link
-              to="/tasks/new"
+              to="/dayplan"
               className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors duration-200 text-sm font-medium"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +178,7 @@ export default function Navbar() {
 
             {/* Mobile New Task Button */}
             <Link
-              to="/tasks/new"
+              to="/dayplan"
               onClick={() => setIsMenuOpen(false)}
               className="block px-4 py-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors duration-200 text-base font-medium text-center"
             >

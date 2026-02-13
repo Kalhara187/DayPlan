@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
+import Footer from '../components/Footer'
 import { useTasks } from '../context/TaskContext'
 
 export default function DayPlan() {
@@ -1094,6 +1095,4 @@ export default function DayPlan() {
                     </div>
                 </div>
             )}
-        </>
-    )
-}
+            <Footer />

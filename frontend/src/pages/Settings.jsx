@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
+import Footer from '../components/Footer'
 import api from '../services/api'
 
 export default function Settings() {
@@ -465,6 +466,7 @@ export default function Settings() {
                     </div>
                 </div>
             )}
+            <Footer />
         </>
     )
 }

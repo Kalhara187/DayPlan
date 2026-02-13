@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
+import Footer from '../components/Footer'
 import { useTasks } from '../context/TaskContext'
 
 export default function Calendar() {
@@ -404,6 +405,7 @@ export default function Calendar() {
                     </div>
                 </div>
             </div>
+            <Footer />
         </>
     )
 }

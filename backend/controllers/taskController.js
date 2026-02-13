@@ -12,7 +12,7 @@ const SAMPLE_USER = {
 export const getTasks = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         // Return empty array for sample user (localStorage used)
         if (userId === SAMPLE_USER.id) {
             return res.status(200).json({
@@ -49,7 +49,7 @@ export const getTasks = async (req, res) => {
 export const getTask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -88,7 +88,7 @@ export const getTask = async (req, res) => {
 export const createTask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -126,7 +126,7 @@ export const createTask = async (req, res) => {
 export const updateTask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -175,7 +175,7 @@ export const updateTask = async (req, res) => {
 export const deleteTask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -215,7 +215,7 @@ export const deleteTask = async (req, res) => {
 export const toggleTaskComplete = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -258,7 +258,7 @@ export const toggleTaskComplete = async (req, res) => {
 export const addSubtask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -306,7 +306,7 @@ export const addSubtask = async (req, res) => {
 export const updateSubtask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -360,7 +360,7 @@ export const updateSubtask = async (req, res) => {
 export const deleteSubtask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -403,7 +403,7 @@ export const deleteSubtask = async (req, res) => {
 export const toggleSubtask = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -455,7 +455,7 @@ export const toggleSubtask = async (req, res) => {
 export const getTags = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(200).json({
                 status: 'success',
@@ -499,7 +499,7 @@ export const getTags = async (req, res) => {
 export const getTaskStats = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(200).json({
                 status: 'success',
@@ -555,7 +555,7 @@ export const getTaskStats = async (req, res) => {
 export const deleteRecurringSeries = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id;
-        
+
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({
                 status: 'error',
@@ -573,7 +573,7 @@ export const deleteRecurringSeries = async (req, res) => {
         }
 
         // Delete all instances of this recurring task
-        await Task.deleteMany({ 
+        await Task.deleteMany({
             user: userId,
             $or: [
                 { _id: req.params.id },

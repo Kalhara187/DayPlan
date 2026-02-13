@@ -119,21 +119,21 @@ taskSchema.index({ user: 1, category: 1 });
 taskSchema.index({ user: 1, tags: 1 });
 
 // Method to calculate completion percentage including subtasks
-taskSchema.methods.calculateCompletionPercentage = function() {
+taskSchema.methods.calculateCompletionPercentage = function () {
     if (!this.subtasks || this.subtasks.length === 0) {
         return this.completed ? 100 : 0;
     }
-    
+
     const completedSubtasks = this.subtasks.filter(st => st.completed).length;
     const totalSubtasks = this.subtasks.length;
     const subtaskPercentage = (completedSubtasks / totalSubtasks) * 0.8; // 80% weight
     const mainTaskPercentage = this.completed ? 0.2 : 0; // 20% weight
-    
+
     return Math.round((subtaskPercentage + mainTaskPercentage) * 100);
 };
 
 // Virtual for formatted date display
-taskSchema.virtual('formattedDate').get(function() {
+taskSchema.virtual('formattedDate').get(function () {
     if (!this.date) return null;
     const [year, month, day] = this.date.split('-');
     return `${month}/${day}/${year}`;

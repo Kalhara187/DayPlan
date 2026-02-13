@@ -16,7 +16,7 @@ const SAMPLE_USER = {
 export const getUserProfile = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id || req.userId;
-        
+
         // Check if it's the sample user
         if (userId === SAMPLE_USER.id) {
             return res.status(200).json({
@@ -56,7 +56,7 @@ export const updateUserProfile = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id || req.userId;
         const { fullName, email } = req.body;
-        
+
         // Check if it's the sample user
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({

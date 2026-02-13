@@ -16,7 +16,7 @@ const SAMPLE_USER = {
 export const getNotificationSettings = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id || req.userId;
-        
+
         // Check if it's the sample user
         if (userId === SAMPLE_USER.id) {
             return res.status(200).json({
@@ -113,7 +113,7 @@ export const updateNotificationSettings = async (req, res) => {
 export const sendTestEmail = async (req, res) => {
     try {
         const userId = req.user?.id || req.user?._id || req.userId;
-        
+
         // Check if it's the sample user
         if (userId === SAMPLE_USER.id) {
             return res.status(400).json({

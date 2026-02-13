@@ -97,7 +97,7 @@ export const signin = async (req, res) => {
         if (email === SAMPLE_USER.email && password === SAMPLE_USER.password) {
             console.log('✓ Sample user login successful');
             const token = generateToken(SAMPLE_USER.id);
-            
+
             return res.status(200).json({
                 status: 'success',
                 message: 'Login successful (Sample User)',

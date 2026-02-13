@@ -1,6 +1,16 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
+import bcrypt from 'bcryptjs';
+
+// Sample user for testing when database is not connected
+const SAMPLE_USER = {
+    id: 'sample-user-12345',
+    fullName: 'Sample User',
+    email: 'dayplan1234@gmail.com',
+    password: 'Dayplan@1234', // Plain text password for comparison
+    createdAt: new Date('2026-01-01T00:00:00.000Z')
+};
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -83,6 +93,26 @@ export const signin = async (req, res) => {
 
         const { email, password } = req.body;
 
+        // Check for sample user first (for testing when DB is not connected)
+        if (email === SAMPLE_USER.email && password === SAMPLE_USER.password) {
+            console.log('✓ Sample user login successful');
+            const token = generateToken(SAMPLE_USER.id);
+            
+            return res.status(200).json({
+                status: 'success',
+                message: 'Login successful (Sample User)',
+                data: {
+                    user: {
+                        id: SAMPLE_USER.id,
+                        fullName: SAMPLE_USER.fullName,
+                        email: SAMPLE_USER.email,
+                        createdAt: SAMPLE_USER.createdAt
+                    },
+                    token
+                }
+            });
+        }
+
         // Check if user exists and get password field
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
@@ -132,6 +162,21 @@ export const signin = async (req, res) => {
 // @access  Private
 export const getMe = async (req, res) => {
     try {
+        // Check if it's the sample user
+        if (req.user.id === SAMPLE_USER.id || req.user._id === SAMPLE_USER.id) {
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    user: {
+                        id: SAMPLE_USER.id,
+                        fullName: SAMPLE_USER.fullName,
+                        email: SAMPLE_USER.email,
+                        createdAt: SAMPLE_USER.createdAt
+                    }
+                }
+            });
+        }
+
         const user = await User.findById(req.user.id);
 
         if (!user) {

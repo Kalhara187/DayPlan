@@ -1,6 +1,15 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+// Sample user for testing when database is not connected
+const SAMPLE_USER = {
+    id: 'sample-user-12345',
+    _id: 'sample-user-12345',
+    fullName: 'Sample User',
+    email: 'dayplan1234@gmail.com',
+    createdAt: new Date('2026-01-01T00:00:00.000Z')
+};
+
 // Protect routes - verify JWT token
 export const protect = async (req, res, next) => {
     try {
@@ -22,6 +31,12 @@ export const protect = async (req, res, next) => {
         try {
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            // Check if it's the sample user
+            if (decoded.id === SAMPLE_USER.id) {
+                req.user = SAMPLE_USER;
+                return next();
+            }
 
             // Get user from token
             req.user = await User.findById(decoded.id).select('-password');

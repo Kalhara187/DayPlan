@@ -1,10 +1,33 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 
+// Sample user for testing when database is not connected
+const SAMPLE_USER = {
+    id: 'sample-user-12345',
+    _id: 'sample-user-12345',
+    fullName: 'Sample User',
+    email: 'dayplan1234@gmail.com',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    emailNotifications: false,
+    notificationTime: '09:00'
+};
+
 // Get user profile
 export const getUserProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.userId).select('-password');
+        const userId = req.user?.id || req.user?._id || req.userId;
+        
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    user: SAMPLE_USER
+                }
+            });
+        }
+
+        const user = await User.findById(userId).select('-password');
 
         if (!user) {
             return res.status(404).json({
@@ -31,8 +54,18 @@ export const getUserProfile = async (req, res) => {
 // Update user profile
 export const updateUserProfile = async (req, res) => {
     try {
+        const userId = req.user?.id || req.user?._id || req.userId;
         const { fullName, email } = req.body;
-        const user = await User.findById(req.userId);
+        
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot modify sample user profile'
+            });
+        }
+
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -83,7 +116,16 @@ export const updateUserProfile = async (req, res) => {
 // Change password
 export const changePassword = async (req, res) => {
     try {
+        const userId = req.user?.id || req.user?._id || req.userId;
         const { currentPassword, newPassword } = req.body;
+
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot change password for sample user'
+            });
+        }
 
         // Validation
         if (!currentPassword || !newPassword) {
@@ -101,7 +143,7 @@ export const changePassword = async (req, res) => {
         }
 
         // Get user with password
-        const user = await User.findById(req.userId).select('+password');
+        const user = await User.findById(userId).select('+password');
 
         if (!user) {
             return res.status(404).json({
@@ -140,7 +182,16 @@ export const changePassword = async (req, res) => {
 // Delete account
 export const deleteAccount = async (req, res) => {
     try {
+        const userId = req.user?.id || req.user?._id || req.userId;
         const { password } = req.body;
+
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot delete sample user account'
+            });
+        }
 
         if (!password) {
             return res.status(400).json({
@@ -150,7 +201,7 @@ export const deleteAccount = async (req, res) => {
         }
 
         // Get user with password
-        const user = await User.findById(req.userId).select('+password');
+        const user = await User.findById(userId).select('+password');
 
         if (!user) {
             return res.status(404).json({

@@ -1,10 +1,35 @@
 import User from '../models/User.js';
 import { sendTestNotification } from '../services/emailService.js';
 
+// Sample user for testing when database is not connected
+const SAMPLE_USER = {
+    id: 'sample-user-12345',
+    _id: 'sample-user-12345',
+    fullName: 'Sample User',
+    email: 'dayplan1234@gmail.com',
+    emailNotifications: false,
+    notificationTime: '09:00',
+    notificationEmail: 'dayplan1234@gmail.com'
+};
+
 // Get notification settings
 export const getNotificationSettings = async (req, res) => {
     try {
-        const user = await User.findById(req.userId);
+        const userId = req.user?.id || req.user?._id || req.userId;
+        
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(200).json({
+                status: 'success',
+                data: {
+                    emailNotifications: SAMPLE_USER.emailNotifications,
+                    notificationTime: SAMPLE_USER.notificationTime,
+                    notificationEmail: SAMPLE_USER.notificationEmail
+                }
+            });
+        }
+
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -33,9 +58,18 @@ export const getNotificationSettings = async (req, res) => {
 // Update notification settings
 export const updateNotificationSettings = async (req, res) => {
     try {
+        const userId = req.user?.id || req.user?._id || req.userId;
         const { emailNotifications, notificationTime, notificationEmail } = req.body;
 
-        const user = await User.findById(req.userId);
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot modify sample user notification settings'
+            });
+        }
+
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -78,7 +112,17 @@ export const updateNotificationSettings = async (req, res) => {
 // Send test notification
 export const sendTestEmail = async (req, res) => {
     try {
-        const user = await User.findById(req.userId);
+        const userId = req.user?.id || req.user?._id || req.userId;
+        
+        // Check if it's the sample user
+        if (userId === SAMPLE_USER.id) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Cannot send test email for sample user'
+            });
+        }
+
+        const user = await User.findById(userId);
 
         if (!user) {
             return res.status(404).json({

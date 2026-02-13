@@ -182,3 +182,209 @@ export const sendTestNotification = async (userEmail, userName) => {
         throw new Error('Failed to send test notification');
     }
 };
+
+// Send password reset email
+export const sendPasswordResetEmail = async (userEmail, userName, resetToken) => {
+    try {
+        const transporter = createTransporter();
+        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: userEmail,
+            subject: '🔐 Password Reset Request - DayPlan',
+            html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        .header {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            padding: 30px;
+                            border-radius: 10px 10px 0 0;
+                            text-align: center;
+                        }
+                        .content {
+                            background: #f8f9fa;
+                            padding: 30px;
+                            border-radius: 0 0 10px 10px;
+                        }
+                        .reset-box {
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            margin: 20px 0;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        }
+                        .cta-button {
+                            display: inline-block;
+                            background: #667eea;
+                            color: white !important;
+                            padding: 14px 35px;
+                            text-decoration: none;
+                            border-radius: 5px;
+                            margin: 20px 0;
+                            font-weight: bold;
+                        }
+                        .warning {
+                            background: #fff3cd;
+                            border-left: 4px solid #ffc107;
+                            padding: 15px;
+                            margin: 20px 0;
+                            border-radius: 4px;
+                        }
+                        .footer {
+                            text-align: center;
+                            color: #6c757d;
+                            font-size: 12px;
+                            margin-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>🔐 Password Reset Request</h1>
+                        <p>DayPlan Security</p>
+                    </div>
+                    <div class="content">
+                        <h2>Hello, ${userName}!</h2>
+                        <p>We received a request to reset your password for your DayPlan account.</p>
+                        
+                        <div class="reset-box">
+                            <h3>Reset Your Password</h3>
+                            <p>Click the button below to create a new password:</p>
+                            <center>
+                                <a href="${resetUrl}" class="cta-button">Reset Password</a>
+                            </center>
+                            <p style="font-size: 12px; color: #6c757d; margin-top: 15px;">
+                                Or copy and paste this link into your browser:<br>
+                                <a href="${resetUrl}" style="color: #667eea; word-break: break-all;">${resetUrl}</a>
+                            </p>
+                        </div>
+
+                        <div class="warning">
+                            <strong>⏰ Important:</strong> This link will expire in 1 hour for security reasons.
+                        </div>
+
+                        <p><strong>Didn't request this?</strong></p>
+                        <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns. Your password will remain unchanged.</p>
+
+                        <p style="margin-top: 30px; font-size: 14px; color: #6c757d;">
+                            🔒 For security, never share this email or link with anyone.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated email from DayPlan.</p>
+                        <p>© 2026 DayPlan. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Password reset email sent successfully:', info.response);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Error sending password reset email:', error);
+        throw new Error('Failed to send password reset email');
+    }
+};
+
+// Send password reset confirmation email
+export const sendPasswordResetConfirmation = async (userEmail, userName) => {
+    try {
+        const transporter = createTransporter();
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: userEmail,
+            subject: '✅ Password Successfully Reset - DayPlan',
+            html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        .header {
+                            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+                            color: white;
+                            padding: 30px;
+                            border-radius: 10px 10px 0 0;
+                            text-align: center;
+                        }
+                        .content {
+                            background: #f8f9fa;
+                            padding: 30px;
+                            border-radius: 0 0 10px 10px;
+                        }
+                        .success-box {
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            margin: 20px 0;
+                            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                            text-align: center;
+                        }
+                        .footer {
+                            text-align: center;
+                            color: #6c757d;
+                            font-size: 12px;
+                            margin-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>✅ Password Reset Successful</h1>
+                        <p>DayPlan Security</p>
+                    </div>
+                    <div class="content">
+                        <h2>Hello, ${userName}!</h2>
+                        
+                        <div class="success-box">
+                            <h3>✓ Your password has been successfully reset</h3>
+                            <p>You can now sign in to your DayPlan account with your new password.</p>
+                        </div>
+
+                        <p><strong>Didn't make this change?</strong></p>
+                        <p>If you didn't reset your password, please contact our support team immediately to secure your account.</p>
+
+                        <p style="margin-top: 30px; font-size: 14px; color: #6c757d;">
+                            🔒 Always keep your password secure and don't share it with anyone.
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated email from DayPlan.</p>
+                        <p>© 2026 DayPlan. All rights reserved.</p>
+                    </div>
+                </body>
+                </html>
+            `
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Password reset confirmation email sent successfully:', info.response);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('Error sending password reset confirmation email:', error);
+        throw new Error('Failed to send password reset confirmation email');
+    }
+};
+

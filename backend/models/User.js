@@ -50,6 +50,14 @@ const userSchema = new mongoose.Schema({
             /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
             'Please provide a valid email'
         ]
+    },
+    resetPasswordToken: {
+        type: String,
+        select: false
+    },
+    resetPasswordExpire: {
+        type: Date,
+        select: false
     }
 }, {
     timestamps: true
@@ -85,6 +93,23 @@ userSchema.methods.toJSON = function () {
     const user = this.toObject();
     delete user.password;
     return user;
+};
+
+// Generate password reset token
+userSchema.methods.getResetPasswordToken = function () {
+    // Generate token
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+    // Hash token and set to resetPasswordToken field
+    this.resetPasswordToken = require('crypto')
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+
+    // Set expire time (1 hour)
+    this.resetPasswordExpire = Date.now() + 60 * 60 * 1000;
+
+    return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);

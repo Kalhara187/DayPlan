@@ -1095,4 +1095,6 @@ export default function DayPlan() {
                     </div>
                 </div>
             )}
-            <Footer />
+            <Footer />        </>
+    )
+}

@@ -4,6 +4,8 @@ import { TaskProvider } from './context/TaskContext.jsx'
 import Landing from './pages/Landing.jsx'
 import SignIn from './pages/Signin.jsx'
 import SignUp from './pages/Signup.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 import Home from './pages/Home.jsx'
 import Settings from './pages/Settings.jsx'
 import DayPlan from './pages/DayPlan.jsx'
@@ -22,6 +24,8 @@ export default function App() {
             <Route path="/landing" element={<Landing />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected routes */}
             <Route path="/home" element={<Home />} />

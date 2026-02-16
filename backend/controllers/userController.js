@@ -15,6 +15,7 @@ const SAMPLE_USER = {
 // Get user profile
 export const getUserProfile = async (req, res) => {
     try {
+        // SECURITY: Get authenticated user ID - user can only view their own profile
         const userId = req.user?.id || req.user?._id || req.userId;
 
         // Check if it's the sample user

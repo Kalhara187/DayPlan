@@ -22,19 +22,29 @@ const checkAndSendNotifications = async () => {
         if (users.length > 0) {
             console.log(`Found ${users.length} user(s) to notify at ${currentTimeString}`);
 
-            // Send notification to each user
+            // Send notification to each user - CRITICAL: Each user gets ONLY their own tasks
             for (const user of users) {
                 try {
+                    // SECURITY: Ensure email is sent to the correct user's email address
                     const emailToSend = user.notificationEmail || user.email;
                     
                     // Get today's date in YYYY-MM-DD format
                     const today = new Date().toISOString().split('T')[0];
                     
-                    // Fetch today's tasks for this user
+                    // SECURITY: Fetch today's tasks for THIS SPECIFIC USER ONLY
+                    // The user: user._id filter ensures data isolation between users
                     const todayTasks = await Task.find({
                         user: user._id,
                         date: today
                     }).sort({ startTime: 1 });
+                    
+                    // SECURITY: Verify tasks belong to this user before sending
+                    const taskUserId = user._id.toString();
+                    const invalidTasks = todayTasks.filter(task => task.user.toString() !== taskUserId);
+                    if (invalidTasks.length > 0) {
+                        console.error(`🚨 SECURITY ALERT: Found ${invalidTasks.length} tasks that don't belong to user ${user.fullName}`);
+                        continue; // Skip this user to prevent data leakage
+                    }
 
                     await sendDailyTaskNotification(emailToSend, user.fullName, todayTasks);
                     console.log(`✅ Notification sent to ${user.fullName} at ${emailToSend} (${todayTasks.length} tasks)`);

@@ -13,6 +13,7 @@ const SAMPLE_USER = {
 // @access  Private
 export const getTasks = async (req, res) => {
     try {
+        // SECURITY: Extract authenticated user ID from JWT token (set by auth middleware)
         const userId = req.user?.id || req.user?._id;
 
         // Return empty array for sample user (localStorage used)
@@ -26,6 +27,7 @@ export const getTasks = async (req, res) => {
             });
         }
 
+        // SECURITY: Only fetch tasks that belong to the authenticated user
         const tasks = await Task.find({ user: userId }).sort({ date: -1, createdAt: -1 });
 
         res.status(200).json({
@@ -50,6 +52,7 @@ export const getTasks = async (req, res) => {
 // @access  Private
 export const getTask = async (req, res) => {
     try {
+        // SECURITY: Extract authenticated user ID from JWT token
         const userId = req.user?.id || req.user?._id;
 
         if (userId === SAMPLE_USER.id) {
@@ -59,6 +62,7 @@ export const getTask = async (req, res) => {
             });
         }
 
+        // SECURITY: User can only access their own tasks - prevents unauthorized access
         const task = await Task.findOne({ _id: req.params.id, user: userId });
 
         if (!task) {
@@ -89,6 +93,7 @@ export const getTask = async (req, res) => {
 // @access  Private
 export const createTask = async (req, res) => {
     try {
+        // SECURITY: Get authenticated user ID from JWT token
         const userId = req.user?.id || req.user?._id;
 
         if (userId === SAMPLE_USER.id) {
@@ -98,9 +103,11 @@ export const createTask = async (req, res) => {
             });
         }
 
+        // SECURITY: Always set user from authenticated token, never trust client input
+        // This prevents users from creating tasks for other users
         const taskData = {
             ...req.body,
-            user: userId
+            user: userId  // Override any user field from request body
         };
 
         const task = await Task.create(taskData);
@@ -147,6 +154,7 @@ export const createTask = async (req, res) => {
 // @access  Private
 export const updateTask = async (req, res) => {
     try {
+        // SECURITY: Get authenticated user ID
         const userId = req.user?.id || req.user?._id;
 
         if (userId === SAMPLE_USER.id) {
@@ -156,6 +164,7 @@ export const updateTask = async (req, res) => {
             });
         }
 
+        // SECURITY: Verify task belongs to authenticated user before updating
         const task = await Task.findOne({ _id: req.params.id, user: userId });
 
         if (!task) {
@@ -196,6 +205,7 @@ export const updateTask = async (req, res) => {
 // @access  Private
 export const deleteTask = async (req, res) => {
     try {
+        // SECURITY: Get authenticated user ID
         const userId = req.user?.id || req.user?._id;
 
         if (userId === SAMPLE_USER.id) {
@@ -205,6 +215,7 @@ export const deleteTask = async (req, res) => {
             });
         }
 
+        // SECURITY: Verify task belongs to authenticated user before deleting
         const task = await Task.findOne({ _id: req.params.id, user: userId });
 
         if (!task) {

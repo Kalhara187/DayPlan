@@ -15,6 +15,7 @@ const SAMPLE_USER = {
 // Get notification settings
 export const getNotificationSettings = async (req, res) => {
     try {
+        // SECURITY: Get authenticated user ID - user can only view their own settings
         const userId = req.user?.id || req.user?._id || req.userId;
 
         // Check if it's the sample user

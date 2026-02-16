@@ -2,7 +2,7 @@
 
 A full-stack web application for planning and managing your daily tasks with user authentication.
 
-## 🚀 Features
+# 🚀 Features
 
 - **User Authentication**
   - Sign up with email and password

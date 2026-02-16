@@ -182,8 +182,9 @@ export const sendDailyTaskNotification = async (userEmail, userName, tasks = [])
         console.log('Email sent successfully:', info.response);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending email:', error);
-        throw new Error('Failed to send email notification');
+        console.error('Error sending daily notification email:', error.message);
+        console.error('Error details:', error);
+        throw error;
     }
 };
 

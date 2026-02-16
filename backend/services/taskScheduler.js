@@ -37,11 +37,14 @@ const checkAndSendNotifications = async () => {
                     }).sort({ startTime: 1 });
 
                     await sendDailyTaskNotification(emailToSend, user.fullName, todayTasks);
-                    console.log(`Notification sent to ${user.fullName} at ${emailToSend} (${todayTasks.length} tasks)`);
+                    console.log(`✅ Notification sent to ${user.fullName} at ${emailToSend} (${todayTasks.length} tasks)`);
                 } catch (error) {
-                    console.error(`Failed to send notification to ${user.fullName}:`, error.message);
+                    console.error(`❌ Failed to send notification to ${user.fullName}:`, error.message);
+                    console.error('Full error:', error);
                 }
             }
+        } else {
+            console.log(`No users scheduled for notification at ${currentTimeString}`);
         }
     } catch (error) {
         console.error('Error in notification scheduler:', error);
@@ -53,6 +56,19 @@ const checkAndSendNotifications = async () => {
 cron.schedule('* * * * *', checkAndSendNotifications);
 
 console.log('📧 Task notification scheduler initialized - checking every minute');
+console.log(`📧 Scheduler started at ${new Date().toLocaleString()}`);
+
+// Run a test check immediately to verify scheduler is working
+setTimeout(async () => {
+    console.log('🔍 Running initial scheduler diagnostic...');
+    const users = await User.find({ emailNotifications: true });
+    console.log(`📊 Found ${users.length} user(s) with email notifications enabled`);
+    if (users.length > 0) {
+        users.forEach(user => {
+            console.log(`  - ${user.fullName} (${user.email}) scheduled for ${user.notificationTime}`);
+        });
+    }
+}, 5000);
 
 // Export for testing purposes
 export { checkAndSendNotifications };

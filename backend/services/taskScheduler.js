@@ -1,4 +1,5 @@
 import cron from 'node-cron';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
 import { sendDailyTaskNotification } from './emailService.js';
@@ -6,6 +7,12 @@ import { sendDailyTaskNotification } from './emailService.js';
 // Function to check and send notifications
 const checkAndSendNotifications = async () => {
     try {
+        // Check if database is connected
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⏭️  Skipping notification check - database not connected');
+            return;
+        }
+
         const currentTime = new Date();
         const currentHour = currentTime.getHours().toString().padStart(2, '0');
         const currentMinute = currentTime.getMinutes().toString().padStart(2, '0');
@@ -70,13 +77,23 @@ console.log(`📧 Scheduler started at ${new Date().toLocaleString()}`);
 
 // Run a test check immediately to verify scheduler is working
 setTimeout(async () => {
-    console.log('🔍 Running initial scheduler diagnostic...');
-    const users = await User.find({ emailNotifications: true });
-    console.log(`📊 Found ${users.length} user(s) with email notifications enabled`);
-    if (users.length > 0) {
-        users.forEach(user => {
-            console.log(`  - ${user.fullName} (${user.email}) scheduled for ${user.notificationTime}`);
-        });
+    try {
+        // Check if database is connected before running diagnostic
+        if (mongoose.connection.readyState !== 1) {
+            console.log('⏭️  Skipping initial scheduler diagnostic - database not connected');
+            return;
+        }
+        
+        console.log('🔍 Running initial scheduler diagnostic...');
+        const users = await User.find({ emailNotifications: true });
+        console.log(`📊 Found ${users.length} user(s) with email notifications enabled`);
+        if (users.length > 0) {
+            users.forEach(user => {
+                console.log(`  - ${user.fullName} (${user.email}) scheduled for ${user.notificationTime}`);
+            });
+        }
+    } catch (error) {
+        console.error('Error in initial scheduler diagnostic:', error.message);
     }
 }, 5000);
 

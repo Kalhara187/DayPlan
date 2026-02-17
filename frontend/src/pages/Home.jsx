@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
 import Footer from '../components/Footer'
+import HealthBot from '../components/HealthBot'
 import api from '../services/api'
 
 export default function Home() {
@@ -398,6 +399,7 @@ export default function Home() {
                     </div>
                 </div>
             </div>
+            <HealthBot />
             <Footer />
         </>
     )

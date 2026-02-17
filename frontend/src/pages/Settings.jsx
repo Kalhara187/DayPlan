@@ -1,16 +1,16 @@
-import { useEffect, useState, useContext } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../navbar/Navbar'
 import Footer from '../components/Footer'
 import api from '../services/api'
-import { ThemeContext } from '../context/ThemeContext'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Settings() {
     const [user, setUser] = useState(null)
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState({ text: '', type: '' })
     const navigate = useNavigate()
-    const { isDarkMode, toggleTheme } = useContext(ThemeContext)
+    const { isDark, toggleTheme } = useTheme()
 
     // Active tab state
     const [activeTab, setActiveTab] = useState('profile')
@@ -108,7 +108,6 @@ export default function Settings() {
             const response = await api.put('/user/profile', profile)
             if (response.data.status === 'success') {
                 setMessage({ text: 'Profile updated successfully!', type: 'success' })
-                // Update localStorage
                 localStorage.setItem('user', JSON.stringify(response.data.data.user))
                 setUser(response.data.data.user)
             }
@@ -442,74 +441,72 @@ export default function Settings() {
 
                     {/* Notifications Tab */}
                     {activeTab === 'notifications' && (
-                    {/* Notifications Tab */}
-                    {activeTab === 'notifications' && (
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Email Notifications</h2>
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                        Enable Email Notifications
-                                    </h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Receive daily task reminders in your inbox
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleNotificationToggle}
-                                    disabled={loading}
-                                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${notificationSettings.emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${notificationSettings.emailNotifications ? 'translate-x-7' : 'translate-x-1'
-                                        }`} />
-                                </button>
-                            </div>
-
-                            {notificationSettings.emailNotifications && (
-                                <>
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
-                                            Notification Time
-                                        </label>
-                                        <input
-                                            type="time"
-                                            value={notificationSettings.notificationTime}
-                                            onChange={handleNotificationTimeChange}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
-                                            Notification Email (Optional)
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={notificationSettings.notificationEmail}
-                                            onChange={handleNotificationEmailChange}
-                                            onBlur={handleNotificationEmailBlur}
-                                            placeholder={user?.email || "your.email@example.com"}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                            Leave empty to use your account email
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                    <div>
+                                        <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                                            Enable Email Notifications
+                                        </h3>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            Receive daily task reminders in your inbox
                                         </p>
                                     </div>
+                                    <button
+                                        onClick={handleNotificationToggle}
+                                        disabled={loading}
+                                        className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${notificationSettings.emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                                            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${notificationSettings.emailNotifications ? 'translate-x-7' : 'translate-x-1'
+                                            }`} />
+                                    </button>
+                                </div>
 
-                                    <div className="flex justify-end">
-                                        <button
-                                            onClick={handleSendTestEmail}
-                                            disabled={loading}
-                                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
-                                        >
-                                            {loading ? 'Sending...' : 'Send Test Email'}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                                {notificationSettings.emailNotifications && (
+                                    <>
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                            <label className="block font-semibold text-gray-900 dark:text-white mb-3">
+                                                Notification Time
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={notificationSettings.notificationTime}
+                                                onChange={handleNotificationTimeChange}
+                                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            />
+                                        </div>
+
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                                            <label className="block font-semibold text-gray-900 dark:text-white mb-3">
+                                                Notification Email (Optional)
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={notificationSettings.notificationEmail}
+                                                onChange={handleNotificationEmailChange}
+                                                onBlur={handleNotificationEmailBlur}
+                                                placeholder={user?.email || "your.email@example.com"}
+                                                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                            />
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                                Leave empty to use your account email
+                                            </p>
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                            <button
+                                                onClick={handleSendTestEmail}
+                                                disabled={loading}
+                                                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                                            >
+                                                {loading ? 'Sending...' : 'Send Test Email'}
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -531,10 +528,10 @@ export default function Settings() {
                                         </div>
                                         <button
                                             onClick={toggleTheme}
-                                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
+                                            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${isDark ? 'bg-blue-600' : 'bg-gray-300'
                                                 }`}
                                         >
-                                            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-7' : 'translate-x-1'
+                                            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${isDark ? 'translate-x-7' : 'translate-x-1'
                                                 }`} />
                                         </button>
                                     </div>
@@ -610,75 +607,6 @@ export default function Settings() {
                             </div>
                         </div>
                     )}
-
-                    {/* Danger Zone Tab */}
-                    {activeTab === 'danger' && (
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-2 border-red-200 dark:border-red-900">
-                            <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-6">Danger Zone</h2>
-                            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                                        Enable Email Notifications
-                                    </h3>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        Receive daily task reminders in your inbox
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={handleNotificationToggle}
-                                    disabled={loading}
-                                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${notificationSettings.emailNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-                                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${notificationSettings.emailNotifications ? 'translate-x-7' : 'translate-x-1'
-                                        }`} />
-                                </button>
-                            </div>
-
-                            {notificationSettings.emailNotifications && (
-                                <>
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
-                                            Notification Time
-                                        </label>
-                                        <input
-                                            type="time"
-                                            value={notificationSettings.notificationTime}
-                                            onChange={handleNotificationTimeChange}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                    </div>
-
-                                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                        <label className="block font-semibold text-gray-900 dark:text-white mb-3">
-                                            Notification Email (Optional)
-                                        </label>
-                                        <input
-                                            type="email"
-                                            value={notificationSettings.notificationEmail}
-                                            onChange={handleNotificationEmailChange}
-                                            onBlur={handleNotificationEmailBlur}
-                                            placeholder={user?.email || "your.email@example.com"}
-                                            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                        />
-                                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                                            Leave empty to use your account email
-                                        </p>
-                                    </div>
-
-                                    <div className="flex justify-end">
-                                        <button
-                                            onClick={handleSendTestEmail}
-                                            disabled={loading}
-                                            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
-                                        >
-                                            {loading ? 'Sending...' : 'Send Test Email'}
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
 
                     {/* Danger Zone Tab */}
                     {activeTab === 'danger' && (

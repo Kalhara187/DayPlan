@@ -1,4 +1,4 @@
-import User from '../models/User.js';
+import User from '../models/UserMySQL.js';
 import bcrypt from 'bcryptjs';
 
 // Sample user for testing when database is not connected

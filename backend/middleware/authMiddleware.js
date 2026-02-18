@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import User from '../models/UserMySQL.js';
 
 // Sample user for testing when database is not connected
 const SAMPLE_USER = {
@@ -39,7 +39,9 @@ export const protect = async (req, res, next) => {
             }
 
             // Get user from token
-            req.user = await User.findById(decoded.id).select('-password');
+            req.user = await User.findByPk(decoded.id, {
+                attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpire'] }
+            });
 
             if (!req.user) {
                 return res.status(401).json({

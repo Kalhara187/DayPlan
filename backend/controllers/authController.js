@@ -1,8 +1,9 @@
-import User from '../models/User.js';
+import User from '../models/UserMySQL.js';
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { Op } from 'sequelize';
 import { sendPasswordResetEmail, sendPasswordResetConfirmation } from '../services/emailService.js';
 
 // Sample user for testing when database is not connected
@@ -38,7 +39,7 @@ export const signup = async (req, res) => {
         const { fullName, email, password } = req.body;
 
         // Check if user already exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
             return res.status(400).json({
                 status: 'error',
@@ -54,14 +55,14 @@ export const signup = async (req, res) => {
         });
 
         // Generate token
-        const token = generateToken(user._id);
+        const token = generateToken(user.id);
 
         res.status(201).json({
             status: 'success',
             message: 'User registered successfully',
             data: {
                 user: {
-                    id: user._id,
+                    id: user.id,
                     fullName: user.fullName,
                     email: user.email,
                     createdAt: user.createdAt
@@ -116,7 +117,10 @@ export const signin = async (req, res) => {
         }
 
         // Check if user exists and get password field
-        const user = await User.findOne({ email }).select('+password');
+        const user = await User.findOne({ 
+            where: { email },
+            attributes: { include: ['password'] }
+        });
         if (!user) {
             return res.status(401).json({
                 status: 'error',
@@ -134,14 +138,14 @@ export const signin = async (req, res) => {
         }
 
         // Generate token
-        const token = generateToken(user._id);
+        const token = generateToken(user.id);
 
         res.status(200).json({
             status: 'success',
             message: 'Login successful',
             data: {
                 user: {
-                    id: user._id,
+                    id: user.id,
                     fullName: user.fullName,
                     email: user.email,
                     createdAt: user.createdAt
@@ -179,7 +183,7 @@ export const getMe = async (req, res) => {
             });
         }
 
-        const user = await User.findById(req.user.id);
+        const user = await User.findByPk(req.user.id);
 
         if (!user) {
             return res.status(404).json({
@@ -192,7 +196,7 @@ export const getMe = async (req, res) => {
             status: 'success',
             data: {
                 user: {
-                    id: user._id,
+                    id: user.id,
                     fullName: user.fullName,
                     email: user.email,
                     createdAt: user.createdAt
@@ -223,7 +227,7 @@ export const forgotPassword = async (req, res) => {
             });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ where: { email } });
 
         if (!user) {
             // Return success even if user doesn't exist (security best practice)
@@ -235,7 +239,7 @@ export const forgotPassword = async (req, res) => {
 
         // Generate reset token
         const resetToken = user.getResetPasswordToken();
-        await user.save({ validateBeforeSave: false });
+        await user.save({ validate: false });
 
         try {
             // Send email
@@ -247,9 +251,9 @@ export const forgotPassword = async (req, res) => {
             });
         } catch (emailError) {
             // If email fails, clear the reset token
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpire = undefined;
-            await user.save({ validateBeforeSave: false });
+            user.resetPasswordToken = null;
+            user.resetPasswordExpire = null;
+            await user.save({ validate: false });
 
             console.error('Email sending failed:', emailError);
             return res.status(500).json({
@@ -297,9 +301,12 @@ export const resetPassword = async (req, res) => {
 
         // Find user with valid token
         const user = await User.findOne({
-            resetPasswordToken,
-            resetPasswordExpire: { $gt: Date.now() }
-        }).select('+resetPasswordToken +resetPasswordExpire');
+            where: {
+                resetPasswordToken,
+                resetPasswordExpire: { [Op.gt]: new Date() }
+            },
+            attributes: { include: ['resetPasswordToken', 'resetPasswordExpire'] }
+        });
 
         if (!user) {
             return res.status(400).json({
@@ -310,8 +317,8 @@ export const resetPassword = async (req, res) => {
 
         // Set new password
         user.password = password;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpire = undefined;
+        user.resetPasswordToken = null;
+        user.resetPasswordExpire = null;
         await user.save();
 
         // Send confirmation email
@@ -323,14 +330,14 @@ export const resetPassword = async (req, res) => {
         }
 
         // Generate new token
-        const authToken = generateToken(user._id);
+        const authToken = generateToken(user.id);
 
         res.status(200).json({
             status: 'success',
             message: 'Password reset successful',
             data: {
                 user: {
-                    id: user._id,
+                    id: user.id,
                     fullName: user.fullName,
                     email: user.email
                 },

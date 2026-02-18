@@ -1,4 +1,4 @@
-import Task from '../models/Task.js';
+import { Task, Subtask, Attachment } from '../models/TaskMySQL.js';
 import User from '../models/User.js';
 import { sendTaskCreatedEmail } from '../services/emailService.js';
 

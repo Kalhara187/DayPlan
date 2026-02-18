@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
+import { connectDB } from './config/database.js';
+import { initializeDatabase } from './models/index.js';
 import authRoutes from './routes/authRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import userRoutes from './routes/userRoutes.js';
@@ -33,7 +34,7 @@ app.get('/api/health', (req, res) => {
         status: 'success',
         message: 'Server is running',
         timestamp: new Date().toISOString(),
-        database: process.env.MONGODB_URI ? 'configured' : 'not configured',
+        database: process.env.DB_NAME ? 'MySQL configured' : 'not configured',
         email: process.env.EMAIL_USER ? 'configured' : 'not configured'
     });
 });
@@ -75,9 +76,10 @@ app.listen(PORT, async () => {
         console.log(`⚠️  Email service not configured (EMAIL_USER/EMAIL_PASSWORD missing)`);
     }
 
-    // Connect to MongoDB (non-blocking)
-    console.log(`\n📊 Connecting to MongoDB...`);
+    // Connect to MySQL database
+    console.log(`\n📊 Connecting to MySQL database...`);
     await connectDB();
+    await initializeDatabase();
 
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`✅ Server ready at http://localhost:${PORT}`);

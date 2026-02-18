@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
-import Task from '../models/Task.js';
+import { Task } from '../models/TaskMySQL.js';
 import { sendDailyTaskNotification } from './emailService.js';
 
 // Function to check and send notifications

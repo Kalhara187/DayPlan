@@ -17,6 +17,13 @@ export default function Home() {
     })
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState({ text: '', type: '' })
+    const [tasks, setTasks] = useState([])
+    const [taskStats, setTaskStats] = useState({
+        todayTasks: 0,
+        completedTasks: 0,
+        upcomingTasks: 0,
+        productivityScore: 0
+    })
     const navigate = useNavigate()
 
     useEffect(() => {
@@ -29,9 +36,57 @@ export default function Home() {
             return
         }
 
-        // Fetch notification settings
+        // Fetch notification settings and tasks
         fetchNotificationSettings()
+        fetchTasks()
     }, [navigate])
+
+    const fetchTasks = async () => {
+        try {
+            const response = await api.get('/tasks')
+            if (response.data.status === 'success') {
+                const allTasks = response.data.data
+                setTasks(allTasks)
+                calculateTaskStats(allTasks)
+            }
+        } catch (error) {
+            console.error('Error fetching tasks:', error)
+        }
+    }
+
+    const calculateTaskStats = (allTasks) => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        const todayStr = today.toISOString().split('T')[0]
+        
+        // Today's tasks - tasks with today's date
+        const todayTasks = allTasks.filter(task => task.date === todayStr)
+        
+        // Completed tasks - all completed tasks
+        const completedTasks = allTasks.filter(task => task.completed)
+        
+        // Upcoming tasks - tasks with future dates (not today, not completed)
+        const upcomingTasks = allTasks.filter(task => {
+            const taskDate = new Date(task.date)
+            taskDate.setHours(0, 0, 0, 0)
+            return taskDate > today && !task.completed
+        })
+        
+        // Calculate productivity score
+        const totalTasks = allTasks.length
+        const completedCount = completedTasks.length
+        const productivityScore = totalTasks > 0 
+            ? Math.round((completedCount / totalTasks) * 100) 
+            : 100
+
+        setTaskStats({
+            todayTasks: todayTasks.length,
+            completedTasks: completedCount,
+            upcomingTasks: upcomingTasks.length,
+            productivityScore
+        })
+    }
 
     const fetchNotificationSettings = async () => {
         try {
@@ -182,7 +237,8 @@ export default function Home() {
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         {/* Today's Tasks */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                             onClick={() => navigate('/dayplan')}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Today's Tasks</h3>
                                 <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
@@ -191,12 +247,15 @@ export default function Home() {
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">No tasks yet</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{taskStats.todayTasks}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                {taskStats.todayTasks === 0 ? 'No tasks yet' : `${taskStats.todayTasks} task${taskStats.todayTasks !== 1 ? 's' : ''} today`}
+                            </p>
                         </div>
 
                         {/* Completed Tasks */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                             onClick={() => navigate('/tasks')}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Completed</h3>
                                 <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
@@ -205,12 +264,15 @@ export default function Home() {
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Great start!</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{taskStats.completedTasks}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                {taskStats.completedTasks === 0 ? 'Great start!' : `${taskStats.completedTasks} task${taskStats.completedTasks !== 1 ? 's' : ''} done`}
+                            </p>
                         </div>
 
                         {/* Upcoming Events */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                             onClick={() => navigate('/calendar')}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Upcoming</h3>
                                 <div className="bg-purple-100 dark:bg-purple-900 p-3 rounded-lg">
@@ -219,12 +281,15 @@ export default function Home() {
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">0</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">This week</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{taskStats.upcomingTasks}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                {taskStats.upcomingTasks === 0 ? 'All caught up' : 'Future tasks'}
+                            </p>
                         </div>
 
                         {/* Productivity Score */}
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                             onClick={() => navigate('/reports')}>
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Productivity</h3>
                                 <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded-lg">
@@ -233,7 +298,7 @@ export default function Home() {
                                     </svg>
                                 </div>
                             </div>
-                            <p className="text-3xl font-bold text-gray-900 dark:text-white">100%</p>
+                            <p className="text-3xl font-bold text-gray-900 dark:text-white">{taskStats.productivityScore}%</p>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Keep it up!</p>
                         </div>
                     </div>
@@ -342,11 +407,60 @@ export default function Home() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* Recent Activity */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Recent Tasks</h2>
                             <div className="space-y-4">
-                                <div className="flex items-center justify-center py-12">
-                                    <p className="text-gray-500 dark:text-gray-400">No recent activity</p>
-                                </div>
+                                {tasks.length === 0 ? (
+                                    <div className="flex items-center justify-center py-12">
+                                        <p className="text-gray-500 dark:text-gray-400">No tasks yet</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {tasks.slice(0, 5).map((task) => (
+                                            <div 
+                                                key={task.id}
+                                                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                onClick={() => navigate('/dayplan')}
+                                            >
+                                                <div className="flex items-center space-x-3 flex-1">
+                                                    <div className={`flex-shrink-0 w-2 h-2 rounded-full ${
+                                                        task.completed 
+                                                            ? 'bg-green-500' 
+                                                            : task.priority === 'high' 
+                                                            ? 'bg-red-500' 
+                                                            : task.priority === 'medium' 
+                                                            ? 'bg-yellow-500' 
+                                                            : 'bg-blue-500'
+                                                    }`}></div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className={`text-sm font-medium truncate ${
+                                                            task.completed 
+                                                                ? 'text-gray-500 dark:text-gray-400 line-through' 
+                                                                : 'text-gray-900 dark:text-white'
+                                                        }`}>
+                                                            {task.title}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {new Date(task.date).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {task.completed && (
+                                                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {tasks.length > 5 && (
+                                            <button 
+                                                onClick={() => navigate('/tasks')}
+                                                className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:underline py-2"
+                                            >
+                                                View all tasks →
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 

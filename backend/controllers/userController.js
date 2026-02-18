@@ -28,7 +28,9 @@ export const getUserProfile = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findByPk(userId, {
+            attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpire'] }
+        });
 
         if (!user) {
             return res.status(404).json({
@@ -66,7 +68,7 @@ export const updateUserProfile = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -77,7 +79,7 @@ export const updateUserProfile = async (req, res) => {
 
         // Check if email is being changed and if it's already taken
         if (email && email !== user.email) {
-            const emailExists = await User.findOne({ email });
+            const emailExists = await User.findOne({ where: { email } });
             if (emailExists) {
                 return res.status(400).json({
                     status: 'error',
@@ -95,8 +97,16 @@ export const updateUserProfile = async (req, res) => {
         await user.save();
 
         // Return user without password
-        const userResponse = user.toObject();
-        delete userResponse.password;
+        const userResponse = {
+            id: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            emailNotifications: user.emailNotifications,
+            notificationTime: user.notificationTime,
+            notificationEmail: user.notificationEmail,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        };
 
         res.status(200).json({
             status: 'success',
@@ -144,7 +154,7 @@ export const changePassword = async (req, res) => {
         }
 
         // Get user with password
-        const user = await User.findById(userId).select('+password');
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -154,7 +164,7 @@ export const changePassword = async (req, res) => {
         }
 
         // Verify current password
-        const isPasswordCorrect = await user.comparePassword(currentPassword);
+        const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
 
         if (!isPasswordCorrect) {
             return res.status(401).json({
@@ -163,8 +173,9 @@ export const changePassword = async (req, res) => {
             });
         }
 
-        // Update password
-        user.password = newPassword;
+        // Hash and update password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
         await user.save();
 
         res.status(200).json({
@@ -202,7 +213,7 @@ export const deleteAccount = async (req, res) => {
         }
 
         // Get user with password
-        const user = await User.findById(userId).select('+password');
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -212,7 +223,7 @@ export const deleteAccount = async (req, res) => {
         }
 
         // Verify password
-        const isPasswordCorrect = await user.comparePassword(password);
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
         if (!isPasswordCorrect) {
             return res.status(401).json({
@@ -222,7 +233,7 @@ export const deleteAccount = async (req, res) => {
         }
 
         // Delete user
-        await User.findByIdAndDelete(req.userId);
+        await user.destroy();
 
         res.status(200).json({
             status: 'success',

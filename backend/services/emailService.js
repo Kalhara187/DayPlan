@@ -3,28 +3,126 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create reusable transporter
-const createTransporter = () => {
-    return nodemailer.createTransport({
+// SMTP Configuration options - try multiple configurations for better reliability
+const SMTP_CONFIGS = [
+    {
+        name: 'Gmail SSL (Port 465)',
         host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // Use TLS
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
         },
         tls: {
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            minVersion: 'TLSv1.2'
         },
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000
-    });
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
+    },
+    {
+        name: 'Gmail TLS (Port 587)',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD
+        },
+        tls: {
+            rejectUnauthorized: false,
+            minVersion: 'TLSv1.2'
+        },
+        connectionTimeout: 15000,
+        greetingTimeout: 15000,
+        socketTimeout: 15000
+    }
+];
+
+// Track which configuration works best
+let workingConfigIndex = 0;
+
+// Create reusable transporter with retry logic
+const createTransporter = async (retryCount = 0) => {
+    const config = SMTP_CONFIGS[workingConfigIndex];
+    
+    try {
+        const transporter = nodemailer.createTransport(config);
+        
+        // In development, skip verification if SKIP_EMAIL_VERIFY is true
+        if (process.env.SKIP_EMAIL_VERIFY === 'true') {
+            console.log(`⚠️  Skipping email verification (development mode)`);
+            console.log(`📧 Email transporter created using ${config.name}`);
+            return transporter;
+        }
+        
+        // Verify connection configuration
+        await transporter.verify();
+        console.log(`✅ Email transporter ready using ${config.name}`);
+        
+        return transporter;
+    } catch (error) {
+        console.log(`❌ Failed to connect using ${config.name}: ${error.message}`);
+        
+        // In development mode, return transporter anyway (will fail when actually sending)
+        if (process.env.SKIP_EMAIL_VERIFY === 'true') {
+            console.log(`⚠️  Verification failed but continuing anyway (development mode)`);
+            const transporter = nodemailer.createTransport(config);
+            return transporter;
+        }
+        
+        // Try next configuration
+        if (retryCount < SMTP_CONFIGS.length - 1) {
+            workingConfigIndex = (workingConfigIndex + 1) % SMTP_CONFIGS.length;
+            console.log(`🔄 Trying alternative SMTP configuration...`);
+            return createTransporter(retryCount + 1);
+        }
+        
+        // All configurations failed
+        throw new Error(`Failed to connect to email server. Tried ${SMTP_CONFIGS.length} configurations. Last error: ${error.message}`);
+    }
+};
+
+// Send email with retry logic
+const sendEmailWithRetry = async (transporter, mailOptions, maxRetries = 2) => {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`📧 Sending email (attempt ${attempt}/${maxRetries})...`);
+            const info = await transporter.sendMail(mailOptions);
+            console.log(`✅ Email sent successfully: ${info.messageId}`);
+            return info;
+        } catch (error) {
+            lastError = error;
+            console.log(`❌ Send attempt ${attempt} failed: ${error.message}`);
+            
+            if (attempt < maxRetries) {
+                // Wait before retrying (exponential backoff)
+                const waitTime = Math.pow(2, attempt) * 1000;
+                console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                
+                // Try to recreate transporter with different config
+                try {
+                    transporter = await createTransporter();
+                } catch (createError) {
+                    console.log(`⚠️ Failed to recreate transporter: ${createError.message}`);
+                }
+            }
+        }
+    }
+    
+    throw lastError;
 };
 
 // Send daily task notification
 export const sendDailyTaskNotification = async (userEmail, userName, tasks = []) => {
     try {
-        const transporter = createTransporter();
+        console.log(`📤 Preparing daily notification for ${userName} (${userEmail})`);
+        const transporter = await createTransporter();
 
         // Build task list HTML
         let taskListHTML = '';
@@ -64,7 +162,7 @@ export const sendDailyTaskNotification = async (userEmail, userName, tasks = [])
         }
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DayPlan Notifications" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: `📋 Your Daily Tasks Reminder - ${tasks.length} Task${tasks.length !== 1 ? 's' : ''} Today`,
             html: `
@@ -185,12 +283,12 @@ export const sendDailyTaskNotification = async (userEmail, userName, tasks = [])
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent successfully:', info.response);
+        const info = await sendEmailWithRetry(transporter, mailOptions);
+        console.log(`✅ Daily notification sent successfully to ${userName}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending daily notification email:', error.message);
-        console.error('Error details:', error);
+        console.error(`❌ Error sending daily notification to ${userName}:`, error.message);
+        console.error('Full error details:', error);
         throw error;
     }
 };
@@ -198,10 +296,11 @@ export const sendDailyTaskNotification = async (userEmail, userName, tasks = [])
 // Send test notification
 export const sendTestNotification = async (userEmail, userName) => {
     try {
-        const transporter = createTransporter();
+        console.log(`📤 Sending test notification to ${userName} (${userEmail})`);
+        const transporter = await createTransporter();
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DayPlan Notifications" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: '✅ Test Notification - DayPlan',
             html: `
@@ -250,23 +349,24 @@ export const sendTestNotification = async (userEmail, userName) => {
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Test email sent successfully:', info.response);
+        const info = await sendEmailWithRetry(transporter, mailOptions);
+        console.log(`✅ Test notification sent successfully to ${userName}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending test email:', error);
-        throw new Error('Failed to send test notification');
+        console.error(`❌ Error sending test notification to ${userName}:`, error.message);
+        throw new Error(`Failed to send test notification: ${error.message}`);
     }
 };
 
 // Send password reset email
 export const sendPasswordResetEmail = async (userEmail, userName, resetToken) => {
     try {
-        const transporter = createTransporter();
+        console.log(`📤 Sending password reset email to ${userName} (${userEmail})`);
+        const transporter = await createTransporter();
         const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DayPlan Security" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: '🔐 Password Reset Request - DayPlan',
             html: `
@@ -367,22 +467,23 @@ export const sendPasswordResetEmail = async (userEmail, userName, resetToken) =>
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Password reset email sent successfully:', info.response);
+        const info = await sendEmailWithRetry(transporter, mailOptions);
+        console.log(`✅ Password reset email sent successfully to ${userName}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending password reset email:', error);
-        throw new Error('Failed to send password reset email');
+        console.error(`❌ Error sending password reset email to ${userName}:`, error.message);
+        throw new Error(`Failed to send password reset email: ${error.message}`);
     }
 };
 
 // Send password reset confirmation email
 export const sendPasswordResetConfirmation = async (userEmail, userName) => {
     try {
-        const transporter = createTransporter();
+        console.log(`📤 Sending password reset confirmation to ${userName} (${userEmail})`);
+        const transporter = await createTransporter();
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DayPlan Security" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: '✅ Password Successfully Reset - DayPlan',
             html: `
@@ -455,22 +556,23 @@ export const sendPasswordResetConfirmation = async (userEmail, userName) => {
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Password reset confirmation email sent successfully:', info.response);
+        const info = await sendEmailWithRetry(transporter, mailOptions);
+        console.log(`✅ Password reset confirmation sent successfully to ${userName}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending password reset confirmation email:', error);
-        throw new Error('Failed to send password reset confirmation email');
+        console.error(`❌ Error sending password reset confirmation to ${userName}:`, error.message);
+        throw new Error(`Failed to send password reset confirmation: ${error.message}`);
     }
 };
 
 // Send task creation confirmation email
 export const sendTaskCreatedEmail = async (userEmail, userName, taskDetails) => {
     try {
-        const transporter = createTransporter();
+        console.log(`📤 Sending task creation confirmation to ${userName} (${userEmail})`);
+        const transporter = await createTransporter();
 
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"DayPlan Notifications" <${process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: '✅ New Task Added - DayPlan',
             html: `
@@ -593,12 +695,12 @@ export const sendTaskCreatedEmail = async (userEmail, userName, taskDetails) => 
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Task creation email sent successfully:', info.response);
+        const info = await sendEmailWithRetry(transporter, mailOptions);
+        console.log(`✅ Task creation notification sent successfully to ${userName}`);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('Error sending task creation email:', error);
-        throw new Error('Failed to send task creation email');
+        console.error(`❌ Error sending task creation email to ${userName}:`, error.message);
+        throw new Error(`Failed to send task creation email: ${error.message}`);
     }
 };
 

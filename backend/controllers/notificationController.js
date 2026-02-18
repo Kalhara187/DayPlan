@@ -30,7 +30,7 @@ export const getNotificationSettings = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -70,7 +70,7 @@ export const updateNotificationSettings = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -123,7 +123,7 @@ export const sendTestEmail = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findByPk(userId);
 
         if (!user) {
             return res.status(404).json({
@@ -145,9 +145,21 @@ export const sendTestEmail = async (req, res) => {
         });
     } catch (error) {
         console.error('Error sending test email:', error);
+        
+        // Provide more specific error messages
+        let errorMessage = 'Failed to send test email.';
+        if (error.code === 'ESOCKET' || error.code === 'ETIMEDOUT') {
+            errorMessage = 'Email server connection timeout. Please check your network connection and firewall settings.';
+        } else if (error.code === 'EAUTH') {
+            errorMessage = 'Email authentication failed. Please verify your EMAIL_USER and EMAIL_PASSWORD in .env file.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
         res.status(500).json({
             status: 'error',
-            message: 'Failed to send test email. Please check your email configuration.'
+            message: errorMessage,
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 };

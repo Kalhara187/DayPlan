@@ -6,11 +6,18 @@ dotenv.config();
 // Create reusable transporter
 const createTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail', // You can change this to any email service
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // Use TLS
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASSWORD
-        }
+        },
+        tls: {
+            rejectUnauthorized: false
+        },
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000
     });
 };
 

@@ -1,14 +1,16 @@
 import cron from 'node-cron';
-import mongoose from 'mongoose';
-import User from '../models/User.js';
+import User from '../models/UserMySQL.js';
 import { Task } from '../models/TaskMySQL.js';
+import { sequelize } from '../config/database.js';
 import { sendDailyTaskNotification } from './emailService.js';
 
 // Function to check and send notifications
 const checkAndSendNotifications = async () => {
     try {
         // Check if database is connected
-        if (mongoose.connection.readyState !== 1) {
+        try {
+            await sequelize.authenticate();
+        } catch (error) {
             console.log('⏭️  Skipping notification check - database not connected');
             return;
         }
@@ -21,9 +23,11 @@ const checkAndSendNotifications = async () => {
         console.log(`Checking for notifications at ${currentTimeString}...`);
 
         // Find all users who have enabled email notifications and match the current time
-        const users = await User.find({
-            emailNotifications: true,
-            notificationTime: currentTimeString
+        const users = await User.findAll({
+            where: {
+                emailNotifications: true,
+                notificationTime: currentTimeString
+            }
         });
 
         if (users.length > 0) {
@@ -39,15 +43,18 @@ const checkAndSendNotifications = async () => {
                     const today = new Date().toISOString().split('T')[0];
                     
                     // SECURITY: Fetch today's tasks for THIS SPECIFIC USER ONLY
-                    // The user: user._id filter ensures data isolation between users
-                    const todayTasks = await Task.find({
-                        user: user._id,
-                        date: today
-                    }).sort({ startTime: 1 });
+                    // The userId filter ensures data isolation between users
+                    const todayTasks = await Task.findAll({
+                        where: {
+                            userId: user.id,
+                            date: today
+                        },
+                        order: [['startTime', 'ASC']]
+                    });
                     
                     // SECURITY: Verify tasks belong to this user before sending
-                    const taskUserId = user._id.toString();
-                    const invalidTasks = todayTasks.filter(task => task.user.toString() !== taskUserId);
+                    const taskUserId = user.id;
+                    const invalidTasks = todayTasks.filter(task => task.userId !== taskUserId);
                     if (invalidTasks.length > 0) {
                         console.error(`🚨 SECURITY ALERT: Found ${invalidTasks.length} tasks that don't belong to user ${user.fullName}`);
                         continue; // Skip this user to prevent data leakage
@@ -79,13 +86,17 @@ console.log(`📧 Scheduler started at ${new Date().toLocaleString()}`);
 setTimeout(async () => {
     try {
         // Check if database is connected before running diagnostic
-        if (mongoose.connection.readyState !== 1) {
+        try {
+            await sequelize.authenticate();
+        } catch (error) {
             console.log('⏭️  Skipping initial scheduler diagnostic - database not connected');
             return;
         }
         
         console.log('🔍 Running initial scheduler diagnostic...');
-        const users = await User.find({ emailNotifications: true });
+        const users = await User.findAll({ 
+            where: { emailNotifications: true } 
+        });
         console.log(`📊 Found ${users.length} user(s) with email notifications enabled`);
         if (users.length > 0) {
             users.forEach(user => {
